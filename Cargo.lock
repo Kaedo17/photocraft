@@ -4615,6 +4615,7 @@ dependencies = [
 name = "photocraft"
 version = "0.9.0"
 dependencies = [
+ "android-activity",
  "arboard",
  "async-io",
  "core-graphics2",
@@ -4676,6 +4677,15 @@ dependencies = [
  "rustfft",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "photocraft-android"
+version = "0.9.0"
+dependencies = [
+ "android-activity",
+ "log",
+ "photocraft",
 ]
 
 [[package]]

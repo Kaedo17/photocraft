@@ -37,6 +37,7 @@ crates/
   testkit                    test helpers
 apps/
   photocraft                 desktop app (eframe/wgpu), TCP control server
+  photocraft-android         Android NativeActivity entry trampoline (arm64 APK), links the same app library
   photocraft-cli             headless CLI (convert/info/run/batch/commands/mcp)
   photocraft-web             the same app in the browser (trunk + wasm-bindgen)
   photocraft-web-boot        starts the packaged browser app from compressed parts of its wasm (no file over a host's size cap)

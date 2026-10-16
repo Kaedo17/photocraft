@@ -145,6 +145,7 @@ photocraft/
 │  └─ testkit/                 photocraft-testkit   golden images, perceptual diff, fixtures, PSD corpus helpers
 ├─ apps/
 │  ├─ photocraft/              desktop binary (winit + wgpu + ui-egui + platform-native)
+│  ├─ photocraft-android/      Android NativeActivity entry trampoline (arm64 APK), links the same app library
 │  ├─ photocraft-cli/          headless batch CLI (open → commands → export), also hosts `mcp` subcommand
 │  ├─ photocraft-web/          wasm32 binary (ui-egui + platform-web), demo
 │  └─ photocraft-web-boot/     wasm32 binary that starts the packaged web app from parts of its wasm
