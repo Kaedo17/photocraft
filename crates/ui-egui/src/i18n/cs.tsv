@@ -3840,3 +3840,5 @@ navigator	Zoom	Zvětšení
 	This build can't request shared-storage access.	Tato sestava nemůže požádat o přístup ke sdílenému úložišti.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Tuto složku zatím nelze přečíst. Povolte PhotoCraftu přístup ke všem souborům.
 	selected	vybráno
+	Picker view	Zobrazení výběru
+	Could not remember the view.	Zobrazení se nepodařilo zapamatovat.

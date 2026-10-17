@@ -208,6 +208,7 @@ mod tab_strip;
 pub mod targa_options_ui;
 pub mod text_field_menu;
 pub mod theme;
+pub mod thumbs;
 pub mod tiff_options_ui;
 mod tile_overlay;
 mod timeline_ui;

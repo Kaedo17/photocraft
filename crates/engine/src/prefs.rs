@@ -83,6 +83,11 @@ choice!(
     LinuxDisplayServer { Auto = "auto", X11 = "x11" } default Auto
 );
 choice!(UiFontSize { Tiny = "tiny", Small = "small", Medium = "medium", Large = "large" } default Small);
+choice!(
+    /// The in-app file picker's view (Android and every host without a blocking dialog): a row
+    /// per entry, or icon tiles in three sizes.
+    PickerView { List = "list", SmallIcons = "small", MediumIcons = "medium", LargeIcons = "large" } default LargeIcons
+);
 choice!(LogDestination { Metadata = "metadata", TextFile = "textFile", Both = "both" } default Metadata);
 choice!(LogDetail { SessionsOnly = "sessionsOnly", Concise = "concise", Detailed = "detailed" } default Concise);
 choice!(Ask { Always = "always", Never = "never", Ask = "ask" } default Always);
@@ -333,6 +338,9 @@ pub struct Workspace {
     pub large_tabs: bool,
     pub enable_narrow_options_bar: bool,
     pub remember_workspace_changes: bool,
+    /// The in-app file picker's view: a row per entry (`list`) or icon tiles
+    /// (`small`, `medium`, `large`), changed with the picker's own View buttons and remembered.
+    pub picker_view: PickerView,
 }
 
 impl Default for Workspace {
@@ -345,6 +353,7 @@ impl Default for Workspace {
             large_tabs: false,
             enable_narrow_options_bar: false,
             remember_workspace_changes: true,
+            picker_view: PickerView::default(),
         }
     }
 }
@@ -1074,6 +1083,7 @@ pub fn choices(path: &str) -> Option<&'static [&'static str]> {
         "interface.canvasColor" => CanvasColor::NAMES,
         "interface.canvasBorder" => CanvasBorder::NAMES,
         "interface.uiScale" => UiScale::NAMES,
+        "workspace.pickerView" => PickerView::NAMES,
         "interface.uiFontSize" => UiFontSize::NAMES,
         "historyLog.destination" => LogDestination::NAMES,
         "historyLog.detail" => LogDetail::NAMES,

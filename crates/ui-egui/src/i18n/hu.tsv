@@ -4150,3 +4150,5 @@ cameraRaw	Yellow	Sárga
 	This build can't request shared-storage access.	Ez a build nem kérhet hozzáférést a megosztott tárhelyhez.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Ez a mappa még nem olvasható. Engedélyezze a PhotoCraftnak az összes fájl elérését.
 	selected	kijelölve
+	Picker view	Választó nézete
+	Could not remember the view.	A nézet megjegyzése nem sikerült.

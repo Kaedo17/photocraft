@@ -20,6 +20,8 @@
 
 use std::path::{Path, PathBuf};
 
+use egui::RichText;
+
 use crate::{FileDialogAnswer, FileDialogReply, FileDialogRequest, PhotocraftApp};
 
 /// Where a save lands when no folder was chosen: `Documents/` below the app-private base.
@@ -124,6 +126,8 @@ pub struct State {
     root: Option<StorageRoot>,
     /// A file pick's chosen files so far.
     selected: Vec<PathBuf>,
+    /// The tile width of the icon views (`None`: the preference's list view).
+    view: Option<photocraft_engine::prefs::PickerView>,
     /// A file pick's extensions to list (empty: every file).
     exts: Vec<String>,
     /// A file pick may choose several files.
@@ -163,7 +167,28 @@ pub fn open(app: &mut PhotocraftApp, request: FileDialogRequest, reply: FileDial
         }
         FileDialogRequest::Folder { initial_dir } => (String::new(), Vec::new(), false, start_dir(&base, initial_dir.as_deref())),
     };
-    app.android_file = State { request: Some(request), reply: Some(reply), base: Some(base), browser, name, many, exts, ..Default::default() };
+    // The icon views are the remembered choice; `list` is `view: None` (the rows).
+    let view = prefs_view(app);
+    app.android_file = State { request: Some(request), reply: Some(reply), base: Some(base), browser, name, many, exts, view, ..Default::default() };
+}
+
+/// The browser's view to open with: the remembered choice, `list` for the plain rows.
+fn prefs_view(app: &PhotocraftApp) -> Option<photocraft_engine::prefs::PickerView> {
+    match app.session.prefs().workspace.picker_view {
+        photocraft_engine::prefs::PickerView::List => None,
+        v => Some(v),
+    }
+}
+
+/// The icon tile widths, one per non-list choice.
+fn view_tile_width(v: Option<photocraft_engine::prefs::PickerView>) -> Option<f32> {
+    use photocraft_engine::prefs::PickerView;
+    Some(match v? {
+        PickerView::List => return None,
+        PickerView::SmallIcons => 84.0,
+        PickerView::MediumIcons => 120.0,
+        PickerView::LargeIcons => 152.0,
+    })
 }
 
 /// The directory the browser opens at: `initial_dir` when it sits inside `base`, else `base`
@@ -279,13 +304,33 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
     let mut to_shared = false;
     let mut to_app = false;
     let mut ask_grant = false;
+    let mut set_view: Option<photocraft_engine::prefs::PickerView> = None;
 
     let dirs = list_dirs(&dir);
+    let view = app.android_file.view;
     let files: Vec<PathBuf> = if is_file { list_files(&dir, &app.android_file.exts) } else { Vec::new() };
     let selected = app.android_file.selected.clone();
 
     egui::Modal::new(egui::Id::new("android-file-browser")).show(ctx, |ui| {
         ui.set_min_width(400.0);
+        // A save's Location browser keeps the name prompt's identity: no View row there.
+        if matches!(request, FileDialogRequest::Open { .. } | FileDialogRequest::Folder { .. }) {
+            // View toolbar: the rows, or icon tiles in three sizes (the remembered choice).
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(tl!("View")).color(ui.style().visuals.weak_text_color()));
+                let shown = [
+                    (photocraft_engine::prefs::PickerView::List, tl!("List")),
+                    (photocraft_engine::prefs::PickerView::SmallIcons, tl!("Small")),
+                    (photocraft_engine::prefs::PickerView::MediumIcons, tl!("Medium")),
+                    (photocraft_engine::prefs::PickerView::LargeIcons, tl!("Large")),
+                ];
+                for (v, label) in shown {
+                    if ui.add(egui::Button::new(label).selected(view == Some(v))).clicked() {
+                        set_view = Some(v);
+                    }
+                }
+            });
+        }
         // Root switcher: the browsed root highlighted (shared storage only when the host offers it).
         ui.horizontal(|ui| {
             let in_shared = matches!(root, StorageRoot::Shared(_));
@@ -321,17 +366,103 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
             }
         }
         egui::ScrollArea::vertical().max_height(260.0).auto_shrink([false, true]).show(ui, |ui| {
-            for sub in &dirs {
-                let label = sub.file_name().and_then(|n| n.to_str()).unwrap_or("?");
-                if ui.button(format!("{label}/")).clicked() {
-                    enter = Some(sub.clone());
+            match view_tile_width(view) {
+                None => {
+                    for sub in &dirs {
+                        let label = sub.file_name().and_then(|n| n.to_str()).unwrap_or("?");
+                        if ui.button(format!("{label}/")).clicked() {
+                            enter = Some(sub.clone());
+                        }
+                    }
+                    for (i, file) in files.iter().enumerate() {
+                        let label = file.file_name().and_then(|n| n.to_str()).unwrap_or("?");
+                        let mark = if is_file && selected.contains(file) { "✓ " } else { "" };
+                        if ui.button(format!("{mark}{label}")).clicked() {
+                            toggle = Some(i);
+                        }
+                    }
                 }
-            }
-            for (i, file) in files.iter().enumerate() {
-                let label = file.file_name().and_then(|n| n.to_str()).unwrap_or("?");
-                let mark = if is_file && selected.contains(file) { "✓ " } else { "" };
-                if ui.button(format!("{mark}{label}")).clicked() {
-                    toggle = Some(i);
+                Some(width) => {
+                    // Folders first, then files; inside a cell the tile is one button the full
+                    // cell wide, so the whole tile toggles or enters. Drag-to-scroll comes from
+                    // the surrounding ScrollArea (egui's own drag path, forced on like the
+                    // menus' — a finger scrolls the grid).
+                    let per_row = (ui.available_width() / (width + 8.0)).floor().max(1.0) as usize;
+                    // Feed the decode budget while the view is up: every frame fills up to two
+                    // undecoded tiles, and the repaints continue while any are pending.
+                    if crate::thumbs::load(ctx, &files).len() == crate::thumbs::BUDGET as usize {
+                        ui.ctx().request_repaint();
+                    }
+                    let mut row: Vec<&PathBuf> = Vec::new();
+                    let mut flush = |ui: &mut egui::Ui, row: &mut Vec<&PathBuf>| {
+                        if row.is_empty() {
+                            return;
+                        }
+                        ui.vertical(|ui| {
+                            for path in row.iter() {
+                                let is_dir = dirs.contains(*path);
+                                let label = path.file_name().and_then(|n| n.to_str()).unwrap_or("?").to_string();
+                                // A folder keeps the trailing "/", in this view too.
+                                let name: String = if is_dir { format!("{label}/") } else { label.clone() };
+                                let name: String = name.chars().take((width / 7.0) as usize).collect();
+                                // The tile: the file's decoded picture (or its extension glyph
+                                // until one decodes / when nothing does) above the name. The slot
+                                // is allocated, never interactive; the name button under it is
+                                // the whole tile's click target and its accessible label.
+                                let slot = width * 0.62;
+                                let (slot_rect, _) = ui.allocate_exact_size(egui::vec2(width, slot), egui::Sense::hover());
+                                let thumb = (!is_dir).then(|| crate::thumbs::get(ctx, path)).flatten();
+                                match &thumb {
+                                    Some((tex, size)) => {
+                                        let fit = (slot / size[0].max(size[1]) as f32).min(1.0);
+                                        let sz = egui::vec2(size[0] as f32 * fit, size[1] as f32 * fit);
+                                        let at = slot_rect.center() - sz * 0.5;
+                                        ui.painter().image(
+                                            tex.id(),
+                                            egui::Rect::from_min_size(at, sz),
+                                            egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                                            egui::Color32::WHITE,
+                                        );
+                                    }
+                                    None => {
+                                        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("FILE").to_uppercase();
+                                        ui.painter().text(
+                                            slot_rect.center(),
+                                            egui::Align2::CENTER_CENTER,
+                                            ext,
+                                            egui::FontId::proportional(slot * 0.3),
+                                            ui.style().visuals.weak_text_color(),
+                                        );
+                                    }
+                                }
+                                let resp = ui.add_sized([width, 18.0], egui::Button::new(RichText::new(&name).small()));
+                                if !is_dir && is_file && selected.contains(*path) {
+                                    ui.painter().text(
+                                        slot_rect.right_top() + egui::vec2(-6.0, 4.0),
+                                        egui::Align2::RIGHT_TOP,
+                                        "✓",
+                                        egui::FontId::proportional(14.0),
+                                        ui.style().visuals.selection.bg_fill,
+                                    );
+                                }
+                                if resp.clicked() {
+                                    if is_dir {
+                                        enter = Some((*path).clone());
+                                    } else {
+                                        toggle = Some(files.iter().position(|f| f == *path).unwrap_or(usize::MAX));
+                                    }
+                                }
+                            }
+                        });
+                        row.clear();
+                    };
+                    for f in dirs.iter().chain(files.iter()) {
+                        row.push(f);
+                        if row.len() == per_row {
+                            flush(ui, &mut row);
+                        }
+                    }
+                    flush(ui, &mut row);
                 }
             }
         });
@@ -352,7 +483,13 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
     });
     app.android_file.new_name = new_name;
 
-    if ask_grant {
+    if let Some(v) = set_view {
+        if app.session.execute("prefs.set", serde_json::json!({"path": "workspace.pickerView", "value": v.name()})).is_err() {
+            app.ui.status = tl!("Could not remember the view.").into();
+        } else {
+            app.android_file.view = prefs_view(app);
+        }
+    } else if ask_grant {
         if let Some(ask) = app.services.shared_storage_grant.as_ref() {
             ask();
             app.ui.status = tl!("Allow \"All files access\" for PhotoCraft, then tap Shared storage.").into();
@@ -543,6 +680,9 @@ mod ui_tests {
         std::fs::create_dir_all(base.join("Documents")).unwrap();
         let services = Services { app_files_dir: Some(base.clone()), ..Default::default() };
         let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), services);
+        // The row view is what these tests interact with; the icon views are covered in
+        // `thumbs.rs` and by `the_view_buttons_switch_the_listing`.
+        app.session.execute("prefs.set", json!({"path": "workspace.pickerView", "value": "list"})).unwrap();
         ask(&mut app);
         let mut h = Harness::builder().with_size(egui::vec2(1200.0, 800.0)).with_step_dt(1.0 / 60.0).build_ui_state(
             |ui, app: &mut PhotocraftApp| {
@@ -620,10 +760,11 @@ mod ui_tests {
         // run past it before interacting, like the fixture does for the opening prompt.
         f.h.run_steps(4);
         f.h.get_by_label("Art/").click();
-        f.h.run_steps(2);
+        f.h.run_steps(6);
         f.h.get_by_label("Choose this folder").click();
-        f.h.run_steps(2);
-        assert!(f.h.state().android_file.is_open(), "choosing a folder returns to the name prompt, not an answer");
+        // The name prompt reopens on the next frame; run past its invisible sizing pass
+        // (as `run_steps(4)` does for the fixture's opening prompt) before tapping Save.
+        f.h.run_steps(6);
         f.h.get_by_label("Save").click();
         f.h.run_steps(3);
         assert!(!f.h.state().android_file.is_open(), "the save then completed");
@@ -745,5 +886,32 @@ mod ui_tests {
         f.h.get_by_label("Art/").click();
         f.h.run_steps(2);
         assert!(f.h.state().ui.status.is_empty(), "entering a folder clears the stale notice");
+    }
+
+    #[test]
+    fn the_view_buttons_switch_the_listing() {
+        let out: Picked = Rc::default();
+        let slot = out.clone();
+        let mut f = fixture("views", move |app| {
+            app.pick_file_bytes_filtered(&["psd"], move |_app, name, bytes| {
+                slot.borrow_mut().push((name, bytes));
+                Ok(json!("ok"))
+            })
+            .unwrap();
+        });
+        std::fs::write(f.base.join("Documents/Scene.psd"), b"pixels").unwrap();
+        f.h.run_steps(2);
+        // The choice follows the toolbar: Small leaves the test harness's row labels behind,
+        // so identify by text: the rows show "Scene.psd", the tiles show the name too, and the
+        // toolbar remembers the choice.
+        f.h.get_by_label("Small").click();
+        f.h.run_steps(4);
+        assert_eq!(f.h.state().session.prefs().workspace.picker_view.name(), "small", "the choice is remembered");
+        // A single-file pick answers on the tap: the tap itself closes the prompt.
+        f.h.get_by_label_contains("Scene.psd").click();
+        f.h.run_steps(4);
+        assert!(!f.h.state().android_file.is_open(), "the icon view answered the pick on the tap");
+        let expected = f.base.join("Documents/Scene.psd").to_string_lossy().into_owned();
+        assert_eq!(*out.borrow(), vec![(expected, b"pixels".to_vec())]);
     }
 }

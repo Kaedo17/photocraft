@@ -3234,3 +3234,6 @@ curves	Smooth	Glätten
 	This build can't request shared-storage access.	Diese Version kann keinen Zugriff auf den gemeinsamen Speicher anfordern.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Dieser Ordner kann noch nicht gelesen werden. Erlaube PhotoCraft den Zugriff auf alle Dateien.
 	selected	ausgewählt
+	List	Liste
+	Picker view	Auswahlansicht
+	Could not remember the view.	Die Ansicht konnte nicht gemerkt werden.
