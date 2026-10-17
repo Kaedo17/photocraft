@@ -360,14 +360,20 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
             app.ui.status = tl!("This build can't request shared-storage access.").into();
         }
     } else if to_app {
+        // Acting in the browser retires the notice the row was showing (a failure, or the
+        // grant hint) so the row goes back to the location — otherwise a granted "All files
+        // access" would still read as "…then tap Shared storage." after the root switched.
+        app.ui.status.clear();
         app.android_file.root = Some(StorageRoot::App(base.to_path_buf()));
         app.android_file.browser = Some(base.to_path_buf());
     } else if to_shared && let Some(sroot) = shared {
+        app.ui.status.clear();
         app.android_file.root = Some(StorageRoot::Shared(sroot.clone()));
         app.android_file.browser = Some(sroot);
     } else if let Some(i) = toggle
         && let Some(file) = files.get(i)
     {
+        app.ui.status.clear();
         if app.android_file.many {
             if let Some(pos) = app.android_file.selected.iter().position(|f| f == file) {
                 app.android_file.selected.remove(pos);
@@ -379,8 +385,10 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
             finish(app, Some(FileDialogAnswer::Paths(picked)));
         }
     } else if let Some(sub) = enter {
+        app.ui.status.clear();
         app.android_file.browser = Some(sub);
     } else if up {
+        app.ui.status.clear();
         app.android_file.browser = Some(root.up_from(&dir));
     } else if create {
         let name = sanitize_name(&app.android_file.new_name, "");
@@ -389,7 +397,10 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
         } else {
             let made = dir.join(&name);
             match std::fs::create_dir_all(&made) {
-                Ok(()) => app.android_file.browser = Some(made),
+                Ok(()) => {
+                    app.ui.status.clear();
+                    app.android_file.browser = Some(made);
+                }
                 Err(e) => app.ui.status = format!("{} {e}", tl!("Could not create the folder:")),
             }
         }
@@ -712,5 +723,27 @@ mod ui_tests {
         f.h.run_steps(3);
         let expected = f.base.join("Documents/New").to_string_lossy().into_owned();
         assert_eq!(out.borrow().as_deref(), Some(expected.as_str()));
+    }
+
+    #[test]
+    fn navigating_clears_the_notice_the_row_was_showing() {
+        let out: Picked = Rc::default();
+        let slot = out.clone();
+        let mut f = fixture("stale-notice", move |app| {
+            app.pick_file_bytes_filtered(&["psd"], move |_app, name, bytes| {
+                slot.borrow_mut().push((name, bytes));
+                Ok(json!("ok"))
+            })
+            .unwrap();
+        });
+        std::fs::create_dir_all(f.base.join("Documents/Art")).unwrap();
+        // The browser shows an app-status message (a failure, or the "All files access" grant
+        // hint) in its location row; acting in the browser retires it.
+        let hint = "Allow \"All files access\" for PhotoCraft, then tap Shared storage.";
+        f.h.state_mut().ui.status = hint.into();
+        f.h.run_steps(1);
+        f.h.get_by_label("Art/").click();
+        f.h.run_steps(2);
+        assert!(f.h.state().ui.status.is_empty(), "entering a folder clears the stale notice");
     }
 }
