@@ -1144,7 +1144,7 @@ fn choice_label(v: &str) -> String {
     match v {
         "cm" => "Centimeters".into(),
         "mm" => "Millimeters".into(),
-        "75" | "80" | "85" | "90" | "95" | "100" | "125" | "150" | "175" | "200" | "250" | "300" => format!("{v}%"),
+        "50" | "55" | "60" | "65" | "70" | "75" | "80" | "85" | "90" | "95" | "100" | "125" | "150" | "175" | "200" | "250" | "300" => format!("{v}%"),
         "8" => "8 Bits/Channel".into(),
         "16" => "16 Bits/Channel".into(),
         "postScript" => "PostScript (72 points/inch)".into(),
@@ -3145,6 +3145,31 @@ mod tests {
     }
 
     #[test]
+    fn scale_preferences_go_down_to_50_percent() {
+        use prefs::UiScale;
+        // Every fixed choice maps to its fraction, the whole 50–300 series included: a small or
+        // crowded screen (a tablet in split view) needs more than the 75% floor allowed.
+        for (pref, expected) in [
+            (UiScale::P50, 0.5),
+            (UiScale::P55, 0.55),
+            (UiScale::P60, 0.6),
+            (UiScale::P65, 0.65),
+            (UiScale::P70, 0.7),
+            (UiScale::P75, 0.75),
+            (UiScale::P100, 1.0),
+            (UiScale::P300, 3.0),
+        ] {
+            assert_eq!(display_scale(pref, Some(1.0)), expected, "{pref:?}");
+        }
+        let names: &[&str] = prefs::UiScale::NAMES;
+        assert_eq!(names.first(), Some(&"auto"));
+        assert!(names.contains(&"50") && names.contains(&"70"), "the 50–70 series is offered: {names:?}");
+        for v in ["45", "48", "55.5", "0", "500"] {
+            assert!(prefs::UiScale::parse(v).is_none(), "{v} is not a choice");
+        }
+    }
+
+    #[test]
     fn scale_preferences_and_monitor_changes_apply_live() {
         let (mut app, _) = app_with_store();
         let ctx = egui::Context::default();
@@ -3172,7 +3197,22 @@ mod tests {
             step(vec2(2560.0, 1440.0), 1.75, 1.75);
             step(vec2(3840.0, 2160.0), 1.0, 1.0);
         }
-        for (pref, expected) in [("200", 2.0), ("125", 1.25), ("150", 1.5), ("100", 1.0), ("95", 0.95), ("90", 0.9), ("85", 0.85), ("80", 0.8), ("auto", 1.5)] {
+        for (pref, expected) in [
+            ("200", 2.0),
+            ("125", 1.25),
+            ("150", 1.5),
+            ("100", 1.0),
+            ("95", 0.95),
+            ("90", 0.9),
+            ("85", 0.85),
+            ("80", 0.8),
+            ("auto", 1.5),
+            ("50", 0.5),
+            ("55", 0.55),
+            ("60", 0.6),
+            ("65", 0.65),
+            ("70", 0.7),
+        ] {
             app.run("prefs.set", json!({"values": {"interface.uiScale": pref}})).unwrap();
             let mut input = egui::RawInput::default();
             input.viewports.get_mut(&egui::ViewportId::ROOT).unwrap().native_pixels_per_point = Some(1.5);
