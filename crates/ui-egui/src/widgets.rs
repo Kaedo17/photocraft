@@ -1546,12 +1546,36 @@ fn combo_box_arrow_keys<T: PartialEq + Clone>(ui: &mut Ui, response: &Response, 
 /// off the bottom. egui moves a popup up to keep it in the window, so a menu opened low on the
 /// screen first shifts up and only scrolls when it is taller than the window.
 pub fn menu_scroll<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> R {
-    // The popup frame's margin and stroke, and a small gap to the window's edges.
-    let frame = ui.spacing().menu_margin.sum().y + 2.0 + 2.0 * MENU_EDGE;
-    let room = (crate::work_area::visible_rect(ui.ctx()).height() - frame).max(MENU_MIN_HEIGHT);
-    // A popup's Ui is only as tall as the popup was last frame (400 pt on the first), so ask for
-    // the whole room: the area still shrinks to its rows when they need less.
-    egui::ScrollArea::vertical().max_height(room).min_scrolled_height(room).show(ui, add_contents).inner
+    menu_scroll_area(
+        (crate::work_area::visible_rect(ui.ctx()).height()
+        // The popup frame's margin and stroke, and a small gap to the window's edges.
+        - ui.spacing().menu_margin.sum().y
+        - 2.0
+        - 2.0 * MENU_EDGE)
+            .max(MENU_MIN_HEIGHT),
+    )
+    .show(ui, add_contents)
+    .inner
+}
+
+/// The scroll area every menu body runs in: `max_height` points tall, and draggable to scroll with
+/// any pointer. See [`menu_drag`] for why the drag is forced on.
+fn menu_scroll_area(max_height: f32) -> egui::ScrollArea {
+    use egui::containers::scroll_area::ScrollSource;
+    egui::ScrollArea::vertical().scroll_source(ScrollSource { drag: menu_drag(), ..ScrollSource::ALL }).max_height(max_height).min_scrolled_height(max_height)
+}
+
+/// How a menu's contents respond to a drag: always, with the scroll bar and the wheel too.
+///
+/// egui's own default (`DragScroll::OnTouch`) switches drag-to-scroll on only once
+/// `InputState::has_touch_screen` has seen an `Event::Touch`. On Android it never has
+/// (`stamp_android_modifiers` turns touches into synthesized clicks, and winit delivers the
+/// events it has), so a finger drag on the Edit menu was swallowed whole and the rows below the
+/// fold (Preferences, the last of over 40) could not be reached at all. A menu must never depend
+/// on that detection: if it is taller than the window it has to scroll, whatever pointer the user
+/// is holding. The wheel and the scroll bar are untouched.
+fn menu_drag() -> egui::containers::scroll_area::DragScroll {
+    egui::containers::scroll_area::DragScroll::Always
 }
 
 /// Gap kept between a context menu and the window's edges, and the shortest it gets.

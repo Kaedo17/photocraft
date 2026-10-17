@@ -1962,6 +1962,41 @@ mod tests {
     }
 
     #[test]
+    fn a_menu_taller_than_the_window_scrolls_by_drag() {
+        use egui_kittest::{Harness, kittest::Queryable};
+
+        let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+        let mut harness = Harness::builder().with_size(egui::vec2(900.0, 220.0)).build_ui_state(
+            |ui, app| {
+                menu_bar(app, ui);
+            },
+            app,
+        );
+        PhotocraftApp::setup_context(&harness.ctx, crate::theme::ThemeKind::ALL[0]);
+        harness.run_steps(3);
+        harness.get_by_label("Filter").click();
+        harness.run_steps(3);
+
+        // No wheel, no touch event: a pointer drag down the open menu has to move its rows
+        // (egui's default waits for an Event::Touch that never arrives on Android, so the drag
+        // was swallowed whole and the rows below the fold were unreachable).
+        let item = harness.get_by_label_contains("Filter Gallery…");
+        let before = item.rect().top();
+        let mid = egui::pos2(450.0, before + 4.0);
+        harness.drag_at(mid);
+        harness.run();
+        for y in [before - 20.0, before - 45.0, before - 70.0] {
+            harness.hover_at(egui::pos2(450.0, y));
+            harness.run();
+        }
+        harness.drop_at(egui::pos2(450.0, before - 70.0));
+        harness.run_steps(4);
+
+        let after = harness.get_by_label_contains("Filter Gallery…").rect().top();
+        assert!(after < before - 1.0, "a drag should move tall menu content: {before} -> {after}");
+    }
+
+    #[test]
     fn window_panel_and_workspace_ids_drive_the_shell() {
         let mut app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
         let ctx = egui::Context::default();
