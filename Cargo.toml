@@ -157,3 +157,9 @@ opt-level = "z"
 [profile.wasm-release.package.photocraft-paint]
 opt-level = 3
 
+[patch.crates-io]
+# The Android mouse input (see third_party/winit/README.md): eframe 0.36 pins winit
+# to 0.30 and 0.30.13 is the last 0.30 release, so the published crate is vendored
+# with its one Android file changed. Every other target compiles the published crate.
+winit = { path = "third_party/winit" }
+
