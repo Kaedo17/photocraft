@@ -364,6 +364,33 @@ RISC-V (riscv64): `photocraft-<ver>-linux-riscv64.tar.gz` only, built against Ub
 |---|---|---|
 | Static site | `photocraft-web-<ver>.zip` | Runs in a modern browser; host it on any static server |
 
+### Android
+
+The Android build is the same app, not a port of it: `apps/photocraft-android` is a
+NativeActivity entry point that starts the shared library (`photocraft::run_android`), so the
+engine, panels and command registry are shared rather than reimplemented. Build the APK with
+[`cargo-apk`](https://crates.io/crates/cargo-apk):
+
+```sh
+cargo install cargo-apk
+cargo apk build -p photocraft-android            # debug APK (signed with the debug keystore)
+cargo apk build --release -p photocraft-android  # release (needs a signing key, see below)
+```
+
+`cargo apk` reads `[package.metadata.android]` in `apps/photocraft-android/Cargo.toml`: arm64-v8a,
+minSdk 28, the PhotoCraft launcher icon, the `MANAGE_EXTERNAL_STORAGE` permission, and the
+exhaustive `configChanges` that stop a display sleep/wake from relaunching the activity. A release
+build needs `[package.metadata.android.signing.release]` pointing at a keystore (cargo-apk refuses
+to sign a release APK with the debug key).
+
+Android has no system file picker (rfd has no backend there), so Save, Open, exports and folder
+picks are served by PhotoCraft's own in-app browser (`crates/ui-egui/src/android_file.rs`):
+`Documents/` and `config/` live below the app-private directory, and the browser can also reach
+shared storage (`/storage/emulated/0`) once you grant **All files access** on the system settings
+page it opens. A mouse or trackpad works over the vendored winit (see
+[`third_party/winit/README.md`](third_party/winit/README.md)), and keyboard chords match because
+the modifiers are stamped in-app (`stamp_android_modifiers`).
+
 ## The Crafting Apps
 
 PhotoCraft is one of the **Crafting Apps**: free, open-source creative tools from the

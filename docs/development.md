@@ -372,6 +372,45 @@ release build of the benches alone takes longer than PR CI should. To give the n
 its own baseline, run the workflow by hand with `update_baseline` and commit the `perf-baseline`
 artifact as `perf/baseline.json`.
 
+## Android build
+
+`apps/photocraft-android` is a NativeActivity entry trampoline (`android_main`) that opens the same
+app library the desktop and web builds use (`photocraft::run_android`); the engine, panels and
+command registry are shared, not reimplemented. It builds an arm64-v8a APK with
+[`cargo-apk`](https://crates.io/crates/cargo-apk):
+
+```sh
+rustup target add aarch64-linux-android
+cargo install cargo-apk
+export ANDROID_HOME="$HOME/Android/Sdk"                 # platform tools + build-tools
+export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/<version>"   # e.g. 28.2.13676358
+cargo apk build -p photocraft-android                   # debug: target/debug/apk/photocraft.apk
+adb install -r target/debug/apk/photocraft.apk
+adb shell monkey -p ai.storyteller.photocraft -c android.intent.category.LAUNCHER 1
+```
+
+`cargo apk` reads `[package.metadata.android]` in `apps/photocraft-android/Cargo.toml` (arm64-v8a,
+minSdk 28, the launcher icon under `res/`, and the exhaustive `configChanges`). A `--release` build
+needs `[package.metadata.android.signing.release]` pointing at a keystore; cargo-apk refuses to sign
+a release APK with the debug key.
+
+Android specifics:
+
+- **No system file picker.** rfd has no Android backend, so on the phone the file dialogs are served
+  by PhotoCraft's own in-app browser, `crates/ui-egui/src/android_file.rs`, which `poll_file_dialog`
+  routes to when a host sets `Services::app_files_dir` and has no `file_dialog`. `Documents/` and
+  `config/` live below the app-private directory (`AndroidApp::internal_data_path`); `app_dirs`
+  resolves the settings directory there so preferences, preset stores and crash recovery work.
+- **Shared storage.** The browser offers `/storage/emulated/0` as a second root once the user grants
+  **All files access** (`MANAGE_EXTERNAL_STORAGE`). The app can only check and ask for it: the entry
+  crate does the JNI (`apps/photocraft-android/src/android_access.rs`, the project's one piece of
+  real `unsafe`) and hands the shared app plain closures in `photocraft::SharedStorageAccess`.
+- **Input.** The vendored winit adds Android mouse and trackpad input
+  ([`third_party/winit/README.md`](../third_party/winit/README.md)), and `stamp_android_modifiers`
+  in `crates/ui-egui` supplies the keyboard modifiers winit never reports, so chords match.
+- **Wasm is unaffected:** the app crate is not in the `cargo xtask wasm` set, and its desktop
+  dependencies (rfd, arboard, accesskit, X11/Wayland) are gated behind `cfg(not(target_os = "android"))`.
+
 ## Web build
 
 `apps/photocraft-web` runs the same `PhotocraftApp` in the browser through eframe's web runner. The renderer is wgpu: WebGPU where the browser has it, WebGL2 otherwise. It is Rust only. The only JavaScript is the glue that wasm-bindgen generates.

@@ -42,7 +42,7 @@ This plan sets out:
 ## 1. Goals and principles
 
 **Goals**
-- A native, portable (macOS / Windows / Linux), fully open-source layered image editor, roughly matching Photoshop's feature surface over time.
+- A native, portable (macOS / Windows / Linux / Android) fully open-source layered image editor, roughly matching Photoshop's feature surface over time.
 - **The UI can be swapped** without touching the core: egui today, maybe Slint, Qt or something else later.
 - **The core compiles to `wasm32`,** which keeps a browser demo possible.
 - PSD read and write lives in its **own crate that can be published separately.**
@@ -494,7 +494,7 @@ psd/src/
 | Engine | command-level tests: open fixture → dispatch commands → assert snapshot/render; action replays |
 | UI | headless egui tests (egui_kittest) for panels; kept thin because the UI is thin |
 | Perf | criterion benches + budget checks in CI (composite 4k² 20 layers, brush dab throughput, open 100 MP) |
-| Portability | CI matrix: macOS arm64, Windows x64, Linux x64, wasm32 build check |
+| Portability | CI matrix: macOS arm64, Windows x64, Linux x64, wasm32 build check; Android arm64 (`cargo apk`, see `docs/development.md`) |
 
 **Performance targets for v1:**
 - Stroke-to-pixel within one frame at 120 Hz.
