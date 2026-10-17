@@ -3884,3 +3884,23 @@ curves	Smooth	スムーズ
 	This document's layers: {needed} of {budget} for layers	このドキュメントのレイヤー: レイヤー用 {budget} のうち {needed}
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	このドキュメントのレイヤーには {needed} が必要ですが、使えるのは {budget} です: ドキュメント全体の再描画は CPU で行われます
 	GPU Memory (MB, 0 = Automatic)	GPU メモリ（MB、0 = 自動）
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(空)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	PhotoCraft に「すべてのファイルへのアクセス」を許可し、「共有ストレージ」をタップしてください。
+	App storage	アプリのストレージ
+	Change…	変更…
+	Choose this folder	このフォルダーを選択
+	Could not create the folder:	フォルダーを作成できませんでした:
+	File name:	ファイル名:
+	Grant access	アクセスを許可
+	Name the new folder first	先に新しいフォルダーの名前を入力してください
+	New folder	新しいフォルダー
+	Select at least one file.	少なくとも 1 つのファイルを選択してください。
+	Shared storage	共有ストレージ
+	Shared storage (grant access)	共有ストレージ (アクセスを許可)
+	Tap files to select them.	ファイルをタップして選択します。
+	This build can't request shared-storage access.	このビルドは共有ストレージへのアクセスを要求できません。
+	This folder can't be read yet. Grant PhotoCraft access to all files.	このフォルダーはまだ読み取れません。PhotoCraft にすべてのファイルへのアクセスを許可してください。
+	Up	上へ
+	selected	件選択

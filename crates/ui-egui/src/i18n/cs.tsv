@@ -3816,3 +3816,22 @@ navigator	Zoom	Zvětšení
 	This document's layers: {needed} of {budget} for layers	Vrstvy tohoto dokumentu: {needed} z {budget} pro vrstvy
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Vrstvy tohoto dokumentu potřebují {needed}, ale mohou zabrat {budget}: překreslení celého dokumentu probíhá na CPU
 	GPU Memory (MB, 0 = Automatic)	Paměť GPU (MB, 0 = Automaticky)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(prázdné)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Povolte PhotoCraftu přístup ke všem souborům a klepněte na „Sdílené úložiště“.
+	App storage	Úložiště aplikace
+	Change…	Změnit…
+	Choose this folder	Zvolit tuto složku
+	Could not create the folder:	Složku nelze vytvořit:
+	File name:	Název souboru:
+	Grant access	Udělit přístup
+	Name the new folder first	Nejprve pojmenujte novou složku
+	New folder	Nová složka
+	Select at least one file.	Vyberte alespoň jeden soubor.
+	Shared storage	Sdílené úložiště
+	Shared storage (grant access)	Sdílené úložiště (udělit přístup)
+	Tap files to select them.	Klepnutím na soubory je vyberte.
+	This build can't request shared-storage access.	Tato sestava nemůže požádat o přístup ke sdílenému úložišti.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Tuto složku zatím nelze přečíst. Povolte PhotoCraftu přístup ke všem souborům.
+	selected	vybráno

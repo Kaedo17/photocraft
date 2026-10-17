@@ -3210,3 +3210,22 @@ curves	Smooth	Glätten
 	This document's layers: {needed} of {budget} for layers	Ebenen dieses Dokuments: {needed} von {budget} für Ebenen
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Die Ebenen dieses Dokuments brauchen {needed}, dürfen aber {budget} belegen: Das ganze Dokument wird auf der CPU neu gezeichnet
 	GPU Memory (MB, 0 = Automatic)	GPU-Speicher (MB, 0 = Automatisch)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(leer)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Erlaube PhotoCraft den Zugriff auf alle Dateien und tippe dann auf „Gemeinsamer Speicher“.
+	App storage	App-Speicher
+	Change…	Ändern…
+	Choose this folder	Diesen Ordner wählen
+	Could not create the folder:	Ordner konnte nicht erstellt werden:
+	File name:	Dateiname:
+	Grant access	Zugriff erlauben
+	Name the new folder first	Benennen Sie zuerst den neuen Ordner
+	New folder	Neuer Ordner
+	Select at least one file.	Wählen Sie mindestens eine Datei aus.
+	Shared storage	Gemeinsamer Speicher
+	Shared storage (grant access)	Gemeinsamer Speicher (Zugriff erlauben)
+	Tap files to select them.	Tippen Sie auf Dateien, um sie auszuwählen.
+	This build can't request shared-storage access.	Diese Version kann keinen Zugriff auf den gemeinsamen Speicher anfordern.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Dieser Ordner kann noch nicht gelesen werden. Erlaube PhotoCraft den Zugriff auf alle Dateien.
+	selected	ausgewählt

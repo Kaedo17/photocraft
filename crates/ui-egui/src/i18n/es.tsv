@@ -4170,3 +4170,21 @@ navigator	Zoom	Zoom
 	This document's layers: {needed} of {budget} for layers	Capas de este documento: {needed} de {budget} para capas
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Las capas de este documento necesitan {needed} pero pueden ocupar {budget}: los redibujados de todo el documento usan la CPU
 	GPU Memory (MB, 0 = Automatic)	Memoria de GPU (MB, 0 = Automático)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(vacío)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Permite que PhotoCraft acceda a todos los archivos y toca "Almacenamiento compartido".
+	App storage	Almacenamiento de la aplicación
+	Choose this folder	Elegir esta carpeta
+	Could not create the folder:	No se pudo crear la carpeta:
+	File name:	Nombre de archivo:
+	Grant access	Conceder acceso
+	Name the new folder first	Pon un nombre a la nueva carpeta primero
+	New folder	Nueva carpeta
+	Select at least one file.	Selecciona al menos un archivo.
+	Shared storage	Almacenamiento compartido
+	Shared storage (grant access)	Almacenamiento compartido (conceder acceso)
+	Tap files to select them.	Toca archivos para seleccionarlos.
+	This build can't request shared-storage access.	Esta compilación no puede solicitar acceso al almacenamiento compartido.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Aún no se puede leer esta carpeta. Concede a PhotoCraft acceso a todos los archivos.
+	selected	seleccionados

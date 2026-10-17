@@ -2809,3 +2809,23 @@ curves	Smooth	平滑
 	This document's layers: {needed} of {budget} for layers	此文件的圖層：圖層可用 {budget} 中的 {needed}
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	此文件的圖層需要 {needed}，但只能佔用 {budget}：整份文件的重繪使用 CPU
 	GPU Memory (MB, 0 = Automatic)	GPU 記憶體（MB，0 = 自動）
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	（空）
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	允許 PhotoCraft 存取所有檔案，然後點一下「共享儲存空間」。
+	App storage	應用程式儲存空間
+	Change…	變更…
+	Choose this folder	選擇此資料夾
+	Could not create the folder:	無法建立資料夾：
+	File name:	檔案名稱：
+	Grant access	授予存取權
+	Name the new folder first	請先命名新資料夾
+	New folder	新增資料夾
+	Select at least one file.	請至少選擇一個檔案。
+	Shared storage	共享儲存空間
+	Shared storage (grant access)	共享儲存空間（授予存取權）
+	Tap files to select them.	點一下檔案來選取。
+	This build can't request shared-storage access.	此版本無法要求共享儲存空間存取權。
+	This folder can't be read yet. Grant PhotoCraft access to all files.	目前無法讀取此資料夾。請授予 PhotoCraft 存取所有檔案的權限。
+	Up	上一層
+	selected	項已選

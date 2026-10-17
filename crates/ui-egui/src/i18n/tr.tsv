@@ -3938,3 +3938,22 @@ cameraData	Lens	Lens
 	This document's layers: {needed} of {budget} for layers	Bu belgenin katmanları: katmanlar için {budget} içinden {needed}
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Bu belgenin katmanlarının {needed} belleğe ihtiyacı var ama en fazla {budget} kullanabilirler: tüm belgenin yeniden çizimi CPU'yu kullanır
 	GPU Memory (MB, 0 = Automatic)	GPU Belleği (MB, 0 = Otomatik)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(boş)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	PhotoCraft'a tüm dosyalara erişim izni verin, ardından "Paylaşılan depolama"ya dokunun.
+	App storage	Uygulama depolaması
+	Choose this folder	Bu klasörü seç
+	Could not create the folder:	Klasör oluşturulamadı:
+	File name:	Dosya adı:
+	Grant access	Erişim ver
+	Name the new folder first	Önce yeni klasöre ad verin
+	New folder	Yeni klasör
+	Select at least one file.	En az bir dosya seçin.
+	Shared storage	Paylaşılan depolama
+	Shared storage (grant access)	Paylaşılan depolama (erişim ver)
+	Tap files to select them.	Seçmek için dosyalara dokunun.
+	This build can't request shared-storage access.	Bu derleme paylaşılan depolama erişimi isteyemez.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Bu klasör henüz okunamıyor. PhotoCraft'a tüm dosyalara erişim izni verin.
+	Up	Yukarı
+	selected	seçili

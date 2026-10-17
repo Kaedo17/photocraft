@@ -3968,3 +3968,22 @@ curves	Smooth	Vloeiend maken
 	This document's layers: {needed} of {budget} for layers	Lagen van dit document: {needed} van {budget} voor lagen
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	De lagen van dit document hebben {needed} nodig maar mogen {budget} gebruiken: het hele document wordt op de CPU opnieuw getekend
 	GPU Memory (MB, 0 = Automatic)	GPU-geheugen (MB, 0 = Automatisch)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(leeg)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Sta PhotoCraft toegang tot alle bestanden toe en tik dan op "Gedeelde opslag".
+	App storage	App-opslag
+	Choose this folder	Deze map kiezen
+	Could not create the folder:	Kan de map niet aanmaken:
+	File name:	Bestandsnaam:
+	Grant access	Toegang verlenen
+	Name the new folder first	Geef eerst de nieuwe map een naam
+	New folder	Nieuwe map
+	Select at least one file.	Selecteer ten minste één bestand.
+	Shared storage	Gedeelde opslag
+	Shared storage (grant access)	Gedeelde opslag (toegang verlenen)
+	Tap files to select them.	Tik op bestanden om ze te selecteren.
+	This build can't request shared-storage access.	Deze build kan geen toegang tot gedeelde opslag aanvragen.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Deze map kan nog niet worden gelezen. Verleen PhotoCraft toegang tot alle bestanden.
+	Up	Omhoog
+	selected	geselecteerd

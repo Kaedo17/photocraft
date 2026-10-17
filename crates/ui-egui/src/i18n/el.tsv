@@ -3908,3 +3908,22 @@ curves	Smooth	Εξομάλυνση
 	This document's layers: {needed} of {budget} for layers	Επίπεδα αυτού του εγγράφου: {needed} από {budget} για επίπεδα
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Τα επίπεδα αυτού του εγγράφου χρειάζονται {needed} αλλά μπορούν να καταλάβουν {budget}: η επανασχεδίαση όλου του εγγράφου γίνεται στη CPU
 	GPU Memory (MB, 0 = Automatic)	Μνήμη GPU (MB, 0 = Αυτόματο)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(κενό)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Επιτρέψτε στο PhotoCraft πρόσβαση σε όλα τα αρχεία και μετά πατήστε «Κοινόχρηστος χώρος αποθήκευσης».
+	App storage	Χώρος αποθήκευσης εφαρμογής
+	Choose this folder	Επιλογή αυτού του φακέλου
+	Could not create the folder:	Δεν ήταν δυνατή η δημιουργία του φακέλου:
+	File name:	Όνομα αρχείου:
+	Grant access	Παραχώρηση πρόσβασης
+	Name the new folder first	Ονομάστε πρώτα τον νέο φάκελο
+	New folder	Νέος φάκελος
+	Select at least one file.	Επιλέξτε τουλάχιστον ένα αρχείο.
+	Shared storage	Κοινόχρηστος χώρος αποθήκευσης
+	Shared storage (grant access)	Κοινόχρηστος χώρος αποθήκευσης (παραχώρηση πρόσβασης)
+	Tap files to select them.	Πατήστε αρχεία για να τα επιλέξετε.
+	This build can't request shared-storage access.	Αυτή η έκδοση δεν μπορεί να ζητήσει πρόσβαση στον κοινόχρηστο χώρο αποθήκευσης.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Ο φάκελος δεν είναι ακόμη αναγνώσιμος. Παραχωρήστε στο PhotoCraft πρόσβαση σε όλα τα αρχεία.
+	Up	Πάνω
+	selected	επιλεγμένα

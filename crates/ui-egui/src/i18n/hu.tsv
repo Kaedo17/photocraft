@@ -4127,3 +4127,21 @@ cameraRaw	Yellow	Sárga
 	This document's layers: {needed} of {budget} for layers	A dokumentum rétegei: {needed} / {budget} a rétegeknek
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	A dokumentum rétegeinek {needed} kell, de {budget} foglalhatnak: a teljes dokumentum újrarajzolása a CPU-n fut
 	GPU Memory (MB, 0 = Automatic)	GPU-memória (MB, 0 = Automatikus)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(üres)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Engedélyezze a PhotoCraftnak az összes fájl elérését, majd koppintson a „Megosztott tárhely” elemre.
+	App storage	Alkalmazástárhely
+	Choose this folder	Mappa kiválasztása
+	Could not create the folder:	A mappa nem hozható létre:
+	File name:	Fájlnév:
+	Grant access	Hozzáférés engedélyezése
+	Name the new folder first	Először nevezze el az új mappát
+	New folder	Új mappa
+	Select at least one file.	Jelöljön ki legalább egy fájlt.
+	Shared storage	Megosztott tárhely
+	Shared storage (grant access)	Megosztott tárhely (hozzáférés engedélyezése)
+	Tap files to select them.	Koppintson a fájlokra a kijelölésükhöz.
+	This build can't request shared-storage access.	Ez a build nem kérhet hozzáférést a megosztott tárhelyhez.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Ez a mappa még nem olvasható. Engedélyezze a PhotoCraftnak az összes fájl elérését.
+	selected	kijelölve

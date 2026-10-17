@@ -3200,3 +3200,23 @@ curves	Smooth	Haluskan
 	This document's layers: {needed} of {budget} for layers	Layer dokumen ini: {needed} dari {budget} untuk layer
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Layer dokumen ini membutuhkan {needed} tetapi boleh memakai {budget}: penggambaran ulang seluruh dokumen memakai CPU
 	GPU Memory (MB, 0 = Automatic)	Memori GPU (MB, 0 = Otomatis)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(kosong)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Izinkan PhotoCraft mengakses semua file, lalu ketuk "Penyimpanan bersama".
+	App storage	Penyimpanan aplikasi
+	Change…	Ubah…
+	Choose this folder	Pilih folder ini
+	Could not create the folder:	Tidak dapat membuat folder:
+	File name:	Nama file:
+	Grant access	Beri akses
+	Name the new folder first	Beri nama folder baru terlebih dahulu
+	New folder	Folder baru
+	Select at least one file.	Pilih setidaknya satu file.
+	Shared storage	Penyimpanan bersama
+	Shared storage (grant access)	Penyimpanan bersama (beri akses)
+	Tap files to select them.	Ketuk file untuk memilihnya.
+	This build can't request shared-storage access.	Build ini tidak dapat meminta akses penyimpanan bersama.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Folder ini belum dapat dibaca. Beri PhotoCraft akses ke semua file.
+	Up	Naik
+	selected	dipilih

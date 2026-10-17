@@ -3998,3 +3998,22 @@ layerLabel	No Color	Sem cor
 	This document's layers: {needed} of {budget} for layers	Camadas deste documento: {needed} de {budget} para camadas
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	As camadas deste documento precisam de {needed} mas podem ocupar {budget}: o documento inteiro é redesenhado na CPU
 	GPU Memory (MB, 0 = Automatic)	Memória da GPU (MB, 0 = Automático)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(vazio)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Permita que o PhotoCraft acesse todos os arquivos e toque em "Armazenamento compartilhado".
+	App storage	Armazenamento do aplicativo
+	Choose this folder	Escolher esta pasta
+	Could not create the folder:	Não foi possível criar a pasta:
+	File name:	Nome do arquivo:
+	Grant access	Conceder acesso
+	Name the new folder first	Nomeie a nova pasta primeiro
+	New folder	Nova pasta
+	Select at least one file.	Selecione pelo menos um arquivo.
+	Shared storage	Armazenamento compartilhado
+	Shared storage (grant access)	Armazenamento compartilhado (conceder acesso)
+	Tap files to select them.	Toque nos arquivos para selecioná-los.
+	This build can't request shared-storage access.	Esta compilação não pode solicitar acesso ao armazenamento compartilhado.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Ainda não é possível ler esta pasta. Permita que o PhotoCraft acesse todos os arquivos.
+	Up	Subir
+	selected	selecionados

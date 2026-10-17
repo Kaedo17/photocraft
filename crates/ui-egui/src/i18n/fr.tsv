@@ -3213,3 +3213,23 @@ curves	Smooth	Lisser
 	This document's layers: {needed} of {budget} for layers	Calques de ce document : {needed} sur {budget} pour les calques
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Les calques de ce document ont besoin de {needed} mais peuvent occuper {budget} : le document entier se redessine sur le CPU
 	GPU Memory (MB, 0 = Automatic)	Mémoire GPU (Mo, 0 = Automatique)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(vide)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Autorisez PhotoCraft à accéder à tous les fichiers, puis touchez « Stockage partagé ».
+	App storage	Stockage de l'application
+	Change…	Modifier…
+	Choose this folder	Choisir ce dossier
+	Could not create the folder:	Impossible de créer le dossier :
+	File name:	Nom du fichier :
+	Grant access	Autoriser l'accès
+	Name the new folder first	Nommez d'abord le nouveau dossier
+	New folder	Nouveau dossier
+	Select at least one file.	Sélectionnez au moins un fichier.
+	Shared storage	Stockage partagé
+	Shared storage (grant access)	Stockage partagé (autoriser l'accès)
+	Tap files to select them.	Touchez des fichiers pour les sélectionner.
+	This build can't request shared-storage access.	Cette version ne peut pas demander l'accès au stockage partagé.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Ce dossier n'est pas encore accessible en lecture. Autorisez PhotoCraft à accéder à tous les fichiers.
+	Up	Monter
+	selected	sélectionnés

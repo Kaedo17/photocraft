@@ -4281,3 +4281,21 @@ shape	Appearance	Izgled
 	This document's layers: {needed} of {budget} for layers	Slojevi ovog dokumenta: {needed} od {budget} za slojeve
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Slojevima ovog dokumenta treba {needed}, a smeju da zauzmu {budget}: ceo dokument se ponovo iscrtava na CPU-u
 	GPU Memory (MB, 0 = Automatic)	GPU memorija (MB, 0 = Automatski)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(празно)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Дозволите програми PhotoCraft приступ свим датотекама, затим додирните „Дељени простор“.
+	App storage	Простор апликације
+	Choose this folder	Изабери ову фасциклу
+	Could not create the folder:	Није могуће направити фасциклу:
+	File name:	Назив датотеке:
+	Grant access	Дозволи приступ
+	Name the new folder first	Прво назовите нову фасциклу
+	New folder	Нова фасцикла
+	Select at least one file.	Изаберите бар једну датотеку.
+	Shared storage	Дељени простор
+	Shared storage (grant access)	Дељени простор (дозволи приступ)
+	Tap files to select them.	Додирните датотеке да бисте их изабрали.
+	This build can't request shared-storage access.	Ова верзија не може да затражи приступ дељеном простору.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Ова фасцикла се још не може читати. Дозволите програми PhotoCraft приступ свим датотекама.
+	selected	изабрано

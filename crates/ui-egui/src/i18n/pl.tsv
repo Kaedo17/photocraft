@@ -3806,3 +3806,23 @@ curves	Smooth	Wygładź
 	This document's layers: {needed} of {budget} for layers	Warstwy tego dokumentu: {needed} z {budget} na warstwy
 	This document's layers need {needed} but may hold {budget}: whole-document redraws use the CPU	Warstwy tego dokumentu potrzebują {needed}, ale mogą zająć {budget}: odświeżanie całego dokumentu używa CPU
 	GPU Memory (MB, 0 = Automatic)	Pamięć GPU (MB, 0 = Automatycznie)
+
+# Android in-app file browser (crates/ui-egui/src/android_file.rs)
+	(empty)	(puste)
+	Allow "All files access" for PhotoCraft, then tap Shared storage.	Zezwól PhotoCraftowi na dostęp do wszystkich plików, a następnie dotknij „Pamięć współdzielona”.
+	App storage	Pamięć aplikacji
+	Change…	Zmień…
+	Choose this folder	Wybierz ten folder
+	Could not create the folder:	Nie można utworzyć folderu:
+	File name:	Nazwa pliku:
+	Grant access	Przyznaj dostęp
+	Name the new folder first	Najpierw nazwij nowy folder
+	New folder	Nowy folder
+	Select at least one file.	Wybierz co najmniej jeden plik.
+	Shared storage	Pamięć współdzielona
+	Shared storage (grant access)	Pamięć współdzielona (przyznaj dostęp)
+	Tap files to select them.	Dotknij plików, aby je wybrać.
+	This build can't request shared-storage access.	Ta kompilacja nie może zażądać dostępu do pamięci współdzielonej.
+	This folder can't be read yet. Grant PhotoCraft access to all files.	Nie można jeszcze odczytać tego folderu. Przyznaj PhotoCraftowi dostęp do wszystkich plików.
+	Up	W górę
+	selected	wybrano
