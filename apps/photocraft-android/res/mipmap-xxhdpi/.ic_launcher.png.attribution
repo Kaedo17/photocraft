@@ -1,0 +1,13 @@
+asset:        ic_launcher.png
+title:        PhotoCraft app icon, Android mipmap-xxhdpi (144x144)
+author:       PhotoCraft contributors (ArtCraft brand mark, see docs/brand/LICENSE-brand.txt)
+source:       original work
+license:      MIT OR Apache-2.0 (code and assets); the ArtCraft mark is a trademark, docs/brand/LICENSE-brand.txt
+license-file: assets/app-icon/LICENSE.txt
+added:        2026-10-17 by PhotoCraft contributors (Android launcher icon)
+notes:        Launcher icon for the Android build, in the resource tree cargo apk passes to
+              aapt -S. The sidecar is dot-prefixed because aapt rejects a second resource name
+              per directory but skips dot files (see packaging/icons.sh). Resized from the
+              committed hicolor 512 px render of photocraft.svg (the tight full-bleed variant)
+              with Lanczos resampling; packaging/icons.sh regenerates every density from the
+              vector.

@@ -204,7 +204,7 @@ mod control_port_tests {
 pub fn run() -> eframe::Result {
     #[cfg(target_os = "android")]
     {
-        run_inner(None)
+        run_inner(None, None)
     }
     #[cfg(not(target_os = "android"))]
     {
@@ -216,13 +216,29 @@ pub fn run() -> eframe::Result {
 /// loop through [`eframe::NativeOptions::android_app`], which it cannot be built without — leaving
 /// it out ends the activity as soon as it starts.
 #[cfg(target_os = "android")]
-pub fn run_android(android_app: android_activity::AndroidApp) -> eframe::Result {
-    run_inner(Some(android_app))
+pub fn run_android(android_app: android_activity::AndroidApp, access: Option<SharedStorageAccess>) -> eframe::Result {
+    run_inner(Some(android_app), access)
+}
+
+/// Android's "All files access" capabilities (`MANAGE_EXTERNAL_STORAGE`), built by the entry
+/// crate — which owns the JNI to the activity's JVM, since this workspace forbids `unsafe` —
+/// and handed to the in-app file browser as services: whether shared storage may be browsed, and
+/// how to ask for the grant. `None` when the entry crate could not reach the JVM (the browser
+/// then only ever offers the app-private root).
+#[cfg(target_os = "android")]
+pub struct SharedStorageAccess {
+    /// Whether the grant holds right now (re-checked whenever the browser shows the root).
+    pub granted: Box<dyn Fn() -> bool>,
+    /// Ask for it: the system settings page on Android 11+, the permission dialog before that.
+    pub ask: Box<dyn Fn()>,
 }
 
 /// Shared startup; `android_app` is the NativeActivity handle eframe needs on Android (`None` on
 /// the desktop, where [`run`] is the only caller).
-fn run_inner(#[cfg(target_os = "android")] android_app: Option<android_activity::AndroidApp>) -> eframe::Result {
+fn run_inner(
+    #[cfg(target_os = "android")] android_app: Option<android_activity::AndroidApp>,
+    #[cfg(target_os = "android")] access: Option<SharedStorageAccess>,
+) -> eframe::Result {
     // Android: record the app-private base directory before anything resolves the settings
     // directory, and create its folders (settings, recovery, the browser's Documents/).
     #[cfg(target_os = "android")]
@@ -546,10 +562,17 @@ fn run_inner(#[cfg(target_os = "android")] android_app: Option<android_activity:
             let mut services = services::native(automation);
             services.preset_store = presets;
             // Android: rfd has no backend, so the in-app browser serves the file dialogs over the
-            // app-private storage recorded at launch (shared storage is offered once granted).
+            // app-private storage recorded at launch; shared storage (`/storage/emulated/0`) is a
+            // second root there once the user grants "All files access" (the entry crate's JNI
+            // checks and asks, through the plain closures in `SharedStorageAccess`).
             #[cfg(target_os = "android")]
             {
                 services.app_files_dir = crate::app_dirs::android_base();
+                if let Some(access) = access {
+                    services.shared_storage_root = Some(std::path::PathBuf::from("/storage/emulated/0"));
+                    services.shared_storage_granted = Some(access.granted);
+                    services.shared_storage_grant = Some(access.ask);
+                }
             }
             #[cfg(target_os = "linux")]
             let display = tablet::DisplayKind::of(cc);
