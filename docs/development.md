@@ -410,6 +410,9 @@ Android specifics:
   in `crates/ui-egui` supplies the keyboard modifiers winit never reports, so chords match.
 - **Wasm is unaffected:** the app crate is not in the `cargo xtask wasm` set, and its desktop
   dependencies (rfd, arboard, accesskit, X11/Wayland) are gated behind `cfg(not(target_os = "android"))`.
+- **No release signing or store packaging yet** ([G18](gaps.md#g18-android-release-signing-and-store-packaging)):
+  the APK is signed with a local debug keystore for `adb install` only. A release build needs a
+  keystore (a `.p12` behind `[package.metadata.android.signing.release]`) and store accounts.
 
 ## Web build
 

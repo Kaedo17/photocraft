@@ -36,6 +36,7 @@ what an agent can't finish alone.
 | G15 | AI and generative features | AI | medium (high for some users) | 300–600 h + human | [target-app-parity](target-app-parity.md) |
 | G16 | Plug-in compatibility (.8BF, UXP) | ecosystem | medium | 250–450 h + human | [target-app-parity](target-app-parity.md) |
 | G17 | Platforms and distribution | platforms | low-medium | 30–60 h + human | [scorecard](scorecard.md#distribution) |
+| G18 | Android: release signing and store packaging | platforms | low | 20–45 h + human | [development](development.md#android-build) |
 
 ## Feature gaps
 
@@ -266,10 +267,24 @@ what an agent can't finish alone.
   OpenCore (#1859).
 - **Estimate:** 30–60 h. **Human:** signing certificates.
 
+### G18. Android: release signing and store packaging
+- **Missing:** the arm64 APK launches, renders, saves and browses, and once the user grants
+  "All files access" it reaches shared storage too — a file can be picked from `Download/` and a
+  save can land in a shared folder (verified on a Samsung Tab S11, Android 16; see the
+  [Android build](development.md#android-build)). What it still lacks: the APK is signed with a
+  local debug keystore for `adb install` only — no release signing
+  (`[package.metadata.android.signing.release]`, a keystore + password the packaging secrets have
+  to hold, as `packaging/` does for the desktop installers) and no store packaging (Google Play /
+  F-Droid); the grant has to be given by hand from Android's settings page (an app can never hold
+  it silently, and Android can withdraw it); and there are no system file or message dialogs —
+  the in-app browser stands in for the file ones.
+- **Estimate:** 20–45 h. **Human:** a release keystore and store accounts.
+
 ## Revision history
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-17 | minor | G18 new: the Android arm64 port (NativeActivity entry, app-private storage, in-app file browser, shared storage behind "All files access", vendored winit mouse, modifier stamping) verified on a Samsung Tab S11, Android 16; release signing and store packaging remain open |
 | 2026-10-14 | minor | G1: a PSD smart object's filter mask shows when the file opens (Photoshop stores the filtered pixels unmasked); export stores them that way too; Photoshop-oracle floor 185 → 188 of 258 |
 | 2026-10-13 | minor | G14: D90 image area measured (4288 × 2848 at (10, 10)); gap remains open |
 | 2026-10-14 | minor | Corpus floors raised to the measured results of the CMYK, Lab, 32-bit, Levels, Threshold, Posterize, feather and pass-through fixes landed together: Photoshop-authored 165 → 185 of 258, io 146 → 148 of 170, psd-tools 242 → 249 of 309 |

@@ -122,6 +122,7 @@ Detail and the next releases: [docs/roadmap.md](docs/roadmap.md).
 
 | Date | Entry |
 |---|---|
+| 2026-10-17 (Android) | The arm64 APK launches on a Samsung Tab S11 (Android 16): the same egui/eframe + wgpu app from a NativeActivity entry (`photocraft-android`), every file dialog — Save, Save As, Open, imports, exports, folder picks — served by the in-app browser inside the app-private tree (`Documents/` for saves, `config/` for settings, recovery and presets) and, once the user grants "All files access", inside shared storage (`/storage/emulated/0`) as a second root. The APK is debug-signed for `adb install`; release signing and store packaging remain ([G18](docs/gaps.md#g18-android-release-signing-and-store-packaging)). |
 | 2026-10-10 | Full re-measure against Photoshop 2026 27.11.0 (installed bundle inspected): breadth ~76%, ready ~45%, alpha. Progress docs reorganized to the craftrules standard (`parity.md` → `parity-checklist.md`, `parity-estimate.md` merged into `target-app-parity.md`). 0.6.0 released. |
 | 2026-10-09 | Remove tool, Rotate View, crop rotation; OpenRaster and Paint.NET; 39 Affinity documents in the corpus |
 | 2026-10-08 | 0.5.0. Affinity import; Magnetic Lasso, Pattern Stamp, Mixer Brush, Pencil, Patch, Vertical Type on the toolbar |
