@@ -99,7 +99,7 @@ impl PhotocraftApp {
         request: FileDialogRequest,
         then: impl FnOnce(&mut Self, FileDialogAnswer) -> Result<Value, String> + 'static,
     ) -> Result<Value, String> {
-        if self.services.file_dialog.is_none() {
+        if self.services.file_dialog.is_none() && self.services.app_files_dir.is_none() {
             return Err(CANCELLED.into());
         }
         if self.file_dialog.is_some() {
@@ -274,14 +274,26 @@ impl PhotocraftApp {
     /// Called every frame: shows a queued dialog with `parent` (the window) as its parent, and
     /// continues the action that asked once the answer is in. Its errors go to the status bar.
     pub fn poll_file_dialog(&mut self, ctx: &egui::Context, parent: Option<&eframe::Frame>) {
-        let Some(p) = self.file_dialog.as_mut() else { return };
-        if let Some(request) = p.request.take() {
+        // A host with no system picker (Android) serves the dialog with the in-app browser: draw
+        // it first (it answers through the reply on a later frame), then show a queued request.
+        crate::android_file::show(self, ctx);
+        if let Some(request) = self.file_dialog.as_mut().and_then(|p| p.request.take()) {
             let (tx, rx) = mpsc::channel();
-            p.answer = Some(rx);
-            if let Some(show) = self.services.file_dialog.as_mut() {
-                show(request, parent, FileDialogReply { tx, ctx: ctx.clone() });
+            if let Some(p) = self.file_dialog.as_mut() {
+                p.answer = Some(rx);
             }
+            let reply = FileDialogReply { tx, ctx: ctx.clone() };
+            if self.services.file_dialog.is_some() {
+                if let Some(show) = self.services.file_dialog.as_mut() {
+                    show(request, parent, reply);
+                }
+            } else if self.services.app_files_dir.is_some() {
+                // No system picker, but app storage: serve it in-app (Android).
+                crate::android_file::open(self, request, reply);
+            }
+            // Otherwise the reply is dropped unanswered: the dialog couldn't be shown (Cancel).
         }
+        let Some(p) = self.file_dialog.as_ref() else { return };
         let answer = match p.answer.as_ref().map(Receiver::try_recv) {
             Some(Err(TryRecvError::Empty)) => return,
             Some(Ok(answer)) => answer,

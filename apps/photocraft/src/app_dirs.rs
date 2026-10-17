@@ -3,11 +3,14 @@
 //!
 //! In order:
 //! 1. `PHOTOCRAFT_CONFIG_DIR`, when set (tests, agents, custom setups).
-//! 2. **Portable mode** (#228): a marker file ([`PORTABLE_MARKERS`]) beside the executable puts
+//! 2. **Android**: the app-private base directory [`set_android_base`] records from the
+//!    `AndroidApp` at launch (its `config/` subfolder, see `android_storage`). Android has no
+//!    `HOME`/`XDG_CONFIG_HOME`, so the platform convention below finds nothing without it.
+//! 3. **Portable mode** (#228): a marker file ([`PORTABLE_MARKERS`]) beside the executable puts
 //!    everything in `<exe dir>/PhotoCraftData`, so a portable copy on a USB stick leaves nothing in
 //!    `%APPDATA%`. The Windows portable zip ships with `portable.txt`; the MSI doesn't. If that
 //!    folder can't be written (read-only medium, Program Files), the app warns and falls back.
-//! 3. The platform convention: macOS `~/Library/Application Support/Photocraft`, Windows
+//! 4. The platform convention: macOS `~/Library/Application Support/Photocraft`, Windows
 //!    `%APPDATA%\Photocraft`, Linux `$XDG_CONFIG_HOME/photocraft` or `~/.config/photocraft`.
 
 use std::ffi::OsString;
@@ -19,6 +22,26 @@ pub const PORTABLE_MARKERS: [&str; 2] = ["portable.txt", "PhotoCraft.portable"];
 /// The data folder created beside the executable in portable mode.
 pub const PORTABLE_DATA_DIR: &str = "PhotoCraftData";
 
+/// The Android app-private base directory (the `AndroidApp` data directory), recorded once at
+/// launch by `run_android` before the settings directory is resolved. The settings directory is
+/// its `config/` subfolder. Android has no `HOME`/`XDG_CONFIG_HOME`, so nothing else fills this.
+static ANDROID_BASE: OnceLock<PathBuf> = OnceLock::new();
+
+/// Record Android's app-private base directory (idempotent; a second call is ignored). Returns
+/// the base that is now in effect.
+#[cfg(target_os = "android")]
+pub fn set_android_base(base: PathBuf) -> Option<PathBuf> {
+    let _ = ANDROID_BASE.set(base);
+    ANDROID_BASE.get().cloned()
+}
+
+/// Android's app-private base directory, once [`set_android_base`] recorded it (`None` before
+/// launch). Only the Android startup path reads it.
+#[cfg(target_os = "android")]
+pub fn android_base() -> Option<PathBuf> {
+    ANDROID_BASE.get().cloned()
+}
+
 /// How [`DataDir::dir`] was chosen.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Mode {
@@ -28,6 +51,8 @@ pub enum Mode {
     Portable,
     /// The platform's per-user config directory.
     Platform,
+    /// Android's app-private `config/` folder.
+    Android,
 }
 
 /// The resolved data directory.
@@ -64,6 +89,11 @@ pub fn config_dir() -> Option<PathBuf> {
 pub fn resolve(env: impl Fn(&str) -> Option<OsString>, exe_dir: Option<&Path>) -> DataDir {
     if let Some(d) = env("PHOTOCRAFT_CONFIG_DIR").filter(|d| !d.is_empty()) {
         return DataDir { dir: Some(PathBuf::from(d)), mode: Mode::Override, warning: None };
+    }
+    // Android: the app-private data directory recorded at launch, its `config/` subfolder. There
+    // is no `HOME`/portable marker to consider.
+    if let Some(base) = ANDROID_BASE.get() {
+        return DataDir { dir: Some(base.join("config")), mode: Mode::Android, warning: None };
     }
     let platform = platform_dir(&env);
     let Some((exe_dir, marker)) = exe_dir.and_then(|d| portable_marker(d).map(|m| (d, m))) else {

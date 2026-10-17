@@ -28,10 +28,10 @@
 //! `{"id":1,"ok":true,"result":…}`. See `photocraft_ui_egui::control` for the methods.
 //!
 //! On Android there are no command-line arguments, so the app opens as an empty workspace. There
-//! are no system file or message dialogs either (rfd has no Android backend): the file hooks
-//! stay empty and the commands' dialogs fail with "no file dialog available". Settings, brush
-//! presets and crash recovery need a config directory, which Android has none of yet, so they
-//! are skipped. See `apps/photocraft-android`.
+//! are no system file or message dialogs (rfd has no Android backend), so the commands' dialogs
+//! are served by PhotoCraft's own in-app browser (`ui_egui::android_file`) over app-private
+//! storage, and settings, brush presets and crash recovery live in that storage's `config/`
+//! folder. See `apps/photocraft-android`.
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
 mod app_dirs;
@@ -39,6 +39,9 @@ mod app_icon;
 mod appearance;
 #[cfg(target_os = "macos")]
 mod apple_events;
+// App-private storage on Android (the in-app browser's root and the settings directory).
+#[cfg(target_os = "android")]
+mod android_storage;
 mod caps_lock;
 mod caption_style;
 mod control_server;
@@ -220,6 +223,16 @@ pub fn run_android(android_app: android_activity::AndroidApp) -> eframe::Result 
 /// Shared startup; `android_app` is the NativeActivity handle eframe needs on Android (`None` on
 /// the desktop, where [`run`] is the only caller).
 fn run_inner(#[cfg(target_os = "android")] android_app: Option<android_activity::AndroidApp>) -> eframe::Result {
+    // Android: record the app-private base directory before anything resolves the settings
+    // directory, and create its folders (settings, recovery, the browser's Documents/).
+    #[cfg(target_os = "android")]
+    if let Some(base) = android_app.as_ref().and_then(android_activity::AndroidApp::internal_data_path) {
+        crate::app_dirs::set_android_base(base.clone());
+        match crate::android_storage::ensure(&crate::android_storage::layout(&base)) {
+            Ok(()) => log::info!("android storage: {}", base.display()),
+            Err(e) => log::warn!("android storage: {e}"),
+        }
+    }
     // Android has no command line: the empty iterator is exactly the launch a phone starts with.
     let args_os = || -> Box<dyn Iterator<Item = std::ffi::OsString>> {
         if cfg!(target_os = "android") { Box::new(std::iter::empty()) } else { Box::new(std::env::args_os().skip(1)) }
@@ -532,6 +545,12 @@ fn run_inner(#[cfg(target_os = "android")] android_app: Option<android_activity:
             let automation = control.as_ref().map(|(_, _, workspace)| workspace.clone());
             let mut services = services::native(automation);
             services.preset_store = presets;
+            // Android: rfd has no backend, so the in-app browser serves the file dialogs over the
+            // app-private storage recorded at launch (shared storage is offered once granted).
+            #[cfg(target_os = "android")]
+            {
+                services.app_files_dir = crate::app_dirs::android_base();
+            }
             #[cfg(target_os = "linux")]
             let display = tablet::DisplayKind::of(cc);
             #[cfg(target_os = "linux")]

@@ -17,11 +17,13 @@ macro_rules! tl {
 pub mod actions;
 pub mod adjust_dialog;
 pub mod adjust_editors;
+// Android's in-app file dialogs (no system picker there); a no-op on hosts with a picker.
 pub mod adjust_preview;
 pub mod adjust_ui;
 mod alt_grab;
 pub mod analysis_ui;
 pub mod anchor_tools;
+pub mod android_file;
 pub mod artboard_tool;
 pub mod artboard_ui;
 pub(crate) mod background_redraw;
@@ -418,6 +420,11 @@ pub type AppendTextFn = Box<dyn FnMut(&str, &str) -> Result<(), String>>;
 pub type OsEventsFn = Box<dyn FnMut() -> Vec<OsEvent>>;
 /// Ends the app the platform's own way (see [`Services::quit`]).
 pub type QuitFn = Box<dyn FnMut()>;
+/// Whether the shared-storage grant holds right now (Android's "All files access").
+pub type SharedStorageGrantedFn = Box<dyn Fn() -> bool>;
+/// Ask for the shared-storage grant (Android's "All files access" settings page / permission
+/// dialog); the in-app browser re-checks [`SharedStorageGrantedFn`] on the next visit.
+pub type SharedStorageGrantFn = Box<dyn Fn()>;
 /// Where the OS pointer is now, in egui points within the window; `None` when unknown.
 pub type CursorPosFn = Box<dyn FnMut(&egui::Context) -> Option<egui::Pos2>>;
 /// Whether Caps Lock is toggled on, read from the OS. `None` where the platform cannot
@@ -522,6 +529,19 @@ pub struct Services {
     /// while AppKit's run loop is still going crashes or hangs Touch Bar Macs (#1575, #1458).
     /// Without one, eframe closes the window and the app ends with it.
     pub quit: Option<QuitFn>,
+    /// Android (and any host with no system picker): the app-private storage directory. When set
+    /// and [`Self::file_dialog`] is `None`, [`PhotocraftApp::poll_file_dialog`] serves Open/Save/
+    /// Folder with PhotoCraft's own in-app browser (`android_file`) instead of failing.
+    pub app_files_dir: Option<std::path::PathBuf>,
+    /// The shared-storage (whole-tree) root the in-app browser may browse once the user grants
+    /// "All files access" (`/storage/emulated/0` on Android). `None` hides that root.
+    pub shared_storage_root: Option<std::path::PathBuf>,
+    /// Whether the shared-storage grant holds right now; the browser re-checks it on every visit
+    /// (`None`: shared storage is not offered).
+    pub shared_storage_granted: Option<SharedStorageGrantedFn>,
+    /// Ask the user for the shared-storage grant (the system settings page on Android 11+); the
+    /// browser re-checks [`Self::shared_storage_granted`] on the next visit.
+    pub shared_storage_grant: Option<SharedStorageGrantFn>,
 }
 
 /// A document histogram being computed off the UI thread: (document, revision, receiver of
@@ -782,6 +802,9 @@ pub struct PhotocraftApp {
     pub(crate) discard: Option<discard_ui::Prompt>,
     /// The Open or Save dialog in progress, and the action waiting on it (see `file_dialog`).
     pub(crate) file_dialog: Option<file_dialog::Pending>,
+    /// The in-app file browser serving a pending dialog on a host with no system picker
+    /// (Android; see `android_file`). Empty on the desktop, where the platform dialogs run.
+    pub(crate) android_file: crate::android_file::State,
     /// A Save As to a layered TIFF parked behind the TIFF Options prompt (see `tiff_options_ui`).
     pub(crate) tiff_options: Option<tiff_options_ui::Prompt>,
     /// Where each document was last saved or exported to through a dialog (#1826): its next Save
@@ -934,6 +957,7 @@ impl PhotocraftApp {
             prefs_rt: Default::default(),
             discard: None,
             file_dialog: None,
+            android_file: Default::default(),
             tiff_options: None,
             save_dirs: HashMap::new(),
             targa_options: None,

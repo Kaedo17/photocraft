@@ -341,6 +341,11 @@ pub fn handle(app: &mut PhotocraftApp, ctx: &egui::Context) {
     if app.camera_raw.is_some() {
         return;
     }
+    // The in-app file browser (a host with no system picker, e.g. Android) is modal: it owns the
+    // pointer, and no application shortcut should fire beneath it.
+    if app.android_file.is_open() {
+        return;
+    }
     // An open menu owns the keyboard (arrows, ↩, Esc), like a native menu; so does the menu bar
     // once Alt or F10 put the keyboard on it (#4988), and an open dropdown list, whose letters
     // pick an option rather than a tool (#1481).
