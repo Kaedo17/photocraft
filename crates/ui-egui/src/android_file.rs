@@ -128,6 +128,10 @@ pub struct State {
     exts: Vec<String>,
     /// A file pick may choose several files.
     many: bool,
+    /// The egui frame the modal was last drawn in. eframe runs both `logic` and `ui` every frame
+    /// and both poll the file dialog, so without this the modal would be created twice in one
+    /// frame, which egui reports as an ID clash (and would process a click twice).
+    drawn_frame: Option<u64>,
 }
 
 impl State {
@@ -184,6 +188,13 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
     if app.android_file.request.is_none() {
         return;
     }
+    // eframe runs `logic` and `ui` every frame, and both end in `poll_file_dialog`; draw the
+    // modal once, from whichever runs first (the second would be an egui ID clash).
+    let frame = ctx.cumulative_frame_nr();
+    if app.android_file.drawn_frame == Some(frame) {
+        return;
+    }
+    app.android_file.drawn_frame = Some(frame);
     // The wait was abandoned (the pending dialog went away): drop the draft without answering.
     if app.file_dialog.is_none() {
         app.android_file = State::default();
@@ -390,6 +401,11 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
             } else {
                 finish(app, Some(FileDialogAnswer::Paths(picked)));
             }
+        } else if matches!(request, FileDialogRequest::Save { .. }) {
+            // A save's Location browser (Change…): remember the folder and return to the name
+            // prompt — a save is answered with `SaveTo`, never with the folder itself.
+            app.android_file.folder = Some(dir);
+            app.android_file.browser = None;
         } else {
             finish(app, Some(FileDialogAnswer::FolderTo(dir.to_string_lossy().into_owned())));
         }
@@ -525,6 +541,9 @@ mod ui_tests {
                     return;
                 }
                 egui::CentralPanel::default().show(ui, |ui| crate::canvas::document_area(app, ui));
+                // eframe polls the file dialog from both `logic` and `ui`; do the same so the
+                // once-per-frame guard is exercised the way the app runs it.
+                app.poll_file_dialog(&ctx, None);
                 app.poll_file_dialog(&ctx, None);
             },
             app,
@@ -570,6 +589,34 @@ mod ui_tests {
         f.h.get_by_label("Save").click();
         f.h.run_steps(3);
         let expected = f.base.join("Documents/escape.psd").to_string_lossy().into_owned();
+        assert_eq!(out.borrow().as_deref(), Some(expected.as_str()));
+    }
+
+    #[test]
+    fn a_saves_change_button_picks_a_folder_then_saves_into_it() {
+        let out: Rc<RefCell<Option<String>>> = Rc::default();
+        let slot = out.clone();
+        let mut f = fixture("save-change", move |app| {
+            app.pick_save("Scene.psd", move |_app, path| {
+                *slot.borrow_mut() = Some(path);
+                Ok(json!("ok"))
+            })
+            .unwrap();
+        });
+        std::fs::create_dir_all(f.base.join("Documents/Art")).unwrap();
+        f.h.get_by_label("Change…").click();
+        // The browser modal does an egui sizing pass on its first frame (invisible/disabled);
+        // run past it before interacting, like the fixture does for the opening prompt.
+        f.h.run_steps(4);
+        f.h.get_by_label("Art/").click();
+        f.h.run_steps(2);
+        f.h.get_by_label("Choose this folder").click();
+        f.h.run_steps(2);
+        assert!(f.h.state().android_file.is_open(), "choosing a folder returns to the name prompt, not an answer");
+        f.h.get_by_label("Save").click();
+        f.h.run_steps(3);
+        assert!(!f.h.state().android_file.is_open(), "the save then completed");
+        let expected = f.base.join("Documents/Art/Scene.psd").to_string_lossy().into_owned();
         assert_eq!(out.borrow().as_deref(), Some(expected.as_str()));
     }
 
