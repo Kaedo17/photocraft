@@ -341,6 +341,11 @@ pub struct Workspace {
     /// The in-app file picker's view: a row per entry (`list`) or icon tiles
     /// (`small`, `medium`, `large`), changed with the picker's own View buttons and remembered.
     pub picker_view: PickerView,
+    /// Android's launch-time ask for "All files access" (`MANAGE_EXTERNAL_STORAGE`): the prompt's
+    /// "Not now" sets it, so PhotoCraft stops asking at launch. The in-app browser's own
+    /// "Shared storage (grant access)" row asks on demand whatever this says. Android only
+    /// (`ANDROID_ONLY`): no other host ever asks, so it stays out of their Preferences dialog.
+    pub android_skip_all_files_access_prompt: bool,
 }
 
 impl Default for Workspace {
@@ -354,6 +359,7 @@ impl Default for Workspace {
             enable_narrow_options_bar: false,
             remember_workspace_changes: true,
             picker_view: PickerView::default(),
+            android_skip_all_files_access_prompt: false,
         }
     }
 }
@@ -1064,12 +1070,18 @@ pub const HIDDEN_UNTIL_IMPLEMENTED: &[&str] = &[
 
 /// Is the preference at `path` (`"section.key"`) hidden from the Preferences dialog?
 pub fn is_hidden(path: &str) -> bool {
-    HIDDEN_UNTIL_IMPLEMENTED.contains(&path) || (!cfg!(target_os = "linux") && LINUX_ONLY.contains(&path))
+    HIDDEN_UNTIL_IMPLEMENTED.contains(&path)
+        || (!cfg!(target_os = "linux") && LINUX_ONLY.contains(&path))
+        || (!cfg!(target_os = "android") && ANDROID_ONLY.contains(&path))
 }
 
 /// Preferences that only do something on Linux; the dialog doesn't show them elsewhere. They
 /// still load, save and round-trip on every platform.
 pub const LINUX_ONLY: &[&str] = &["performance.linuxDisplayServer"];
+
+/// Preferences that only do something on Android (the launch-time ask for "All files access"):
+/// the dialog shows them on Android alone, and they load, save and round-trip everywhere.
+pub const ANDROID_ONLY: &[&str] = &["workspace.androidSkipAllFilesAccessPrompt"];
 
 /// Choices of an enumerated preference (dotted path, e.g. `"cursors.painting"`).
 pub fn choices(path: &str) -> Option<&'static [&'static str]> {

@@ -2865,3 +2865,8 @@ curves	Smooth	平滑
 	Increase Brush Size	放大筆刷大小
 	Decrease Brush Hardness	降低筆刷硬度
 	Increase Brush Hardness	提高筆刷硬度
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	允許存取所有檔案？
+	Not now	稍後再說
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft 需要「所有檔案存取權」才能在「共享儲存空間」中開啟和儲存檔案。
+	Skip the all-files-access prompt at launch	啟動時不再提示所有檔案存取權

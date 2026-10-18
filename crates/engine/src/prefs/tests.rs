@@ -557,6 +557,19 @@ fn linux_only_preferences_show_only_on_linux() {
 }
 
 #[test]
+fn android_only_preferences_show_only_on_android() {
+    assert_eq!(is_hidden("workspace.androidSkipAllFilesAccessPrompt"), !cfg!(target_os = "android"));
+    assert!(!is_hidden("workspace.pickerView"));
+    // The launch prompt's answer is stored, saved and reloaded on every platform.
+    assert!(!Preferences::default().workspace.android_skip_all_files_access_prompt);
+    let mut s = Session::new();
+    s.execute("prefs.set", json!({"path": "workspace.androidSkipAllFilesAccessPrompt", "value": true})).unwrap();
+    assert!(s.prefs().workspace.android_skip_all_files_access_prompt);
+    let reloaded: Preferences = serde_json::from_str(&s.prefs_to_json()).unwrap();
+    assert!(reloaded.workspace.android_skip_all_files_access_prompt);
+}
+
+#[test]
 fn the_default_pressure_curve_is_linear() {
     let c = PressureCurve::new(&Preferences::default().tools.pressure_curve);
     assert!(c.is_linear());

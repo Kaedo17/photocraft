@@ -3856,3 +3856,8 @@ curves	Smooth	Wygładź
 	Increase Brush Size	Zwiększ rozmiar pędzla
 	Decrease Brush Hardness	Zmniejsz twardość pędzla
 	Increase Brush Hardness	Zwiększ twardość pędzla
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Zezwolić na dostęp do wszystkich plików?
+	Not now	Nie teraz
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft potrzebuje dostępu do wszystkich plików, aby otwierać i zapisywać pliki w „Pamięci współdzielonej”.
+	Skip the all-files-access prompt at launch	Nie pokazuj przy starcie prośby o dostęp do wszystkich plików

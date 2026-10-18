@@ -3956,3 +3956,8 @@ curves	Smooth	Εξομάλυνση
 	Increase Brush Size	Αύξηση μεγέθους πινέλου
 	Decrease Brush Hardness	Μείωση σκληρότητας πινέλου
 	Increase Brush Hardness	Αύξηση σκληρότητας πινέλου
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Να επιτραπεί η πρόσβαση σε όλα τα αρχεία;
+	Not now	Όχι τώρα
+	PhotoCraft needs "All files access" to open and save files in shared storage.	Το PhotoCraft χρειάζεται πρόσβαση σε όλα τα αρχεία για να ανοίγει και να αποθηκεύει αρχεία στον «Κοινόχρηστο χώρο αποθήκευσης».
+	Skip the all-files-access prompt at launch	Να μην ζητείται πρόσβαση σε όλα τα αρχεία κατά την εκκίνηση

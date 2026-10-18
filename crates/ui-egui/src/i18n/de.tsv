@@ -3257,3 +3257,8 @@ curves	Smooth	Glätten
 	Could not remember the view.	Die Ansicht konnte nicht gemerkt werden.
 	{name} was changed by another app after it was opened or saved here.	{name} wurde von einer anderen App geändert, nachdem es hier geöffnet oder gespeichert wurde.
 	Replace it with this document, or cancel and use File › Save As to keep both.	Ersetze die Datei durch dieses Dokument oder brich ab und nutze Datei › Speichern unter, um beide zu behalten.
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Zugriff auf alle Dateien erlauben?
+	Not now	Jetzt nicht
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft benötigt Zugriff auf alle Dateien, um Dateien im „Gemeinsamen Speicher“ zu öffnen und zu speichern.
+	Skip the all-files-access prompt at launch	Beim Start nicht nach dem Zugriff auf alle Dateien fragen

@@ -17,12 +17,14 @@ macro_rules! tl {
 pub mod actions;
 pub mod adjust_dialog;
 pub mod adjust_editors;
-// Android's in-app file dialogs (no system picker there); a no-op on hosts with a picker.
 pub mod adjust_preview;
 pub mod adjust_ui;
 mod alt_grab;
 pub mod analysis_ui;
 pub mod anchor_tools;
+// Android's launch-time ask for "All files access"; a no-op on hosts that cannot check or ask.
+pub mod android_access;
+// Android's in-app file dialogs (no system picker there); a no-op on hosts with a picker.
 pub mod android_file;
 pub mod artboard_tool;
 pub mod artboard_ui;
@@ -853,6 +855,9 @@ pub struct PhotocraftApp {
     /// The in-app file browser serving a pending dialog on a host with no system picker
     /// (Android; see `android_file`). Empty on the desktop, where the platform dialogs run.
     pub(crate) android_file: crate::android_file::State,
+    /// The launch-time ask for Android's "All files access" grant (Android; see
+    /// `android_access`). Idle on every host that cannot check or ask for it.
+    pub(crate) android_access: crate::android_access::State,
     /// A Save As to a layered TIFF parked behind the TIFF Options prompt (see `tiff_options_ui`).
     pub(crate) tiff_options: Option<tiff_options_ui::Prompt>,
     /// Where each document was last saved or exported to through a dialog (#1826): its next Save
@@ -1013,6 +1018,7 @@ impl PhotocraftApp {
             discard: None,
             file_dialog: None,
             android_file: Default::default(),
+            android_access: Default::default(),
             tiff_options: None,
             save_dirs: HashMap::new(),
             disk_stamps: HashMap::new(),

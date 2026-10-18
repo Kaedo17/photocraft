@@ -3266,3 +3266,8 @@ curves	Smooth	Lisser
 	Increase Brush Size	Augmenter la taille du pinceau
 	Decrease Brush Hardness	Réduire la dureté du pinceau
 	Increase Brush Hardness	Augmenter la dureté du pinceau
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Autoriser l'accès à tous les fichiers ?
+	Not now	Plus tard
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft doit accéder à tous les fichiers pour ouvrir et enregistrer des fichiers dans « Stockage partagé ».
+	Skip the all-files-access prompt at launch	Ne plus demander l'accès à tous les fichiers au démarrage

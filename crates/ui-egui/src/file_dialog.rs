@@ -277,6 +277,8 @@ impl PhotocraftApp {
         // A host with no system picker (Android) serves the dialog with the in-app browser: draw
         // it first (it answers through the reply on a later frame), then show a queued request.
         crate::android_file::show(self, ctx);
+        // The launch-time "All files access" prompt (Android) is drawn the same way.
+        crate::android_access::show(self, ctx);
         if let Some(request) = self.file_dialog.as_mut().and_then(|p| p.request.take()) {
             let (tx, rx) = mpsc::channel();
             if let Some(p) = self.file_dialog.as_mut() {

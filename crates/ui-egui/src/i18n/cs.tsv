@@ -3864,3 +3864,8 @@ navigator	Zoom	Zvětšení
 	Increase Brush Size	Zvětšit velikost štětce
 	Decrease Brush Hardness	Snížit tvrdost štětce
 	Increase Brush Hardness	Zvýšit tvrdost štětce
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Povolit přístup ke všem souborům?
+	Not now	Teď ne
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft potřebuje přístup ke všem souborům, aby mohl otevírat a ukládat soubory ve „Sdíleném úložišti“.
+	Skip the all-files-access prompt at launch	Při spuštění nezobrazovat výzvu k přístupu ke všem souborům

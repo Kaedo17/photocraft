@@ -3231,3 +3231,8 @@ curves	Smooth	Сгладить
 	Increase Brush Size	Увеличить размер кисти
 	Decrease Brush Hardness	Уменьшить жёсткость кисти
 	Increase Brush Hardness	Увеличить жёсткость кисти
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Разрешить доступ ко всем файлам?
+	Not now	Не сейчас
+	PhotoCraft needs "All files access" to open and save files in shared storage.	Чтобы открывать и сохранять файлы в «Общем хранилище», PhotoCraft нужен доступ ко всем файлам.
+	Skip the all-files-access prompt at launch	Не показывать запрос доступа ко всем файлам при запуске

@@ -4016,3 +4016,8 @@ curves	Smooth	Vloeiend maken
 	Increase Brush Size	Penseelgrootte vergroten
 	Decrease Brush Hardness	Penseelhardheid verlagen
 	Increase Brush Hardness	Penseelhardheid verhogen
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Toegang tot alle bestanden verlenen?
+	Not now	Niet nu
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft heeft toegang tot alle bestanden nodig om bestanden in "Gedeelde opslag" te openen en op te slaan.
+	Skip the all-files-access prompt at launch	Bij het starten niet om toegang tot alle bestanden vragen

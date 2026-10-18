@@ -3253,3 +3253,8 @@ curves	Smooth	Haluskan
 	Increase Brush Size	Perbesar ukuran kuas
 	Decrease Brush Hardness	Kurangi kekerasan kuas
 	Increase Brush Hardness	Tambah kekerasan kuas
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Izinkan akses ke semua file?
+	Not now	Nanti saja
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft memerlukan akses ke semua file untuk membuka dan menyimpan file di "Penyimpanan bersama".
+	Skip the all-files-access prompt at launch	Jangan tanyakan akses semua file saat mulai

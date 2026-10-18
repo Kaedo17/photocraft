@@ -898,6 +898,11 @@ fn run_inner(
                 {
                     log::warn!("couldn't remember GPU backend {}: {e}", b.name());
                 }
+                // Android: ask for "All files access" once per launch (unless the user said
+                // "Not now" before), so shared storage is reachable without hunting for the
+                // browser's own Grant access row. Inert on every other host.
+                #[cfg(target_os = "android")]
+                photocraft_ui_egui::android_access::maybe_ask(app);
             });
             if let Some((port, token, _)) = control {
                 let rx = control_server::start(port, token, cc.egui_ctx.clone());
@@ -1022,7 +1027,6 @@ pub(crate) static CHILD_SPAWNS: std::sync::RwLock<()> = std::sync::RwLock::new((
 pub(crate) fn no_child_spawns() -> std::sync::RwLockWriteGuard<'static, ()> {
     CHILD_SPAWNS.write().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
-
 
 #[cfg(test)]
 mod tests {

@@ -4046,3 +4046,8 @@ layerLabel	No Color	Sem cor
 	Increase Brush Size	Aumentar tamanho do pincel
 	Decrease Brush Hardness	Diminuir dureza do pincel
 	Increase Brush Hardness	Aumentar dureza do pincel
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Permitir acesso a todos os arquivos?
+	Not now	Agora não
+	PhotoCraft needs "All files access" to open and save files in shared storage.	O PhotoCraft precisa acessar todos os arquivos para abrir e salvar arquivos no "Armazenamento compartilhado".
+	Skip the all-files-access prompt at launch	Não perguntar sobre o acesso a todos os arquivos ao iniciar

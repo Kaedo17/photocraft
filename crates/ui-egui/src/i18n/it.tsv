@@ -4372,3 +4372,8 @@ shape	Appearance	Aspetto
 	Could not remember the view.	Impossibile memorizzare la vista.
 	{name} was changed by another app after it was opened or saved here.	{name} è stato modificato da un'altra app dopo essere stato aperto o salvato qui.
 	Replace it with this document, or cancel and use File › Save As to keep both.	Sostituiscilo con questo documento, oppure annulla e usa File › Salva con nome per tenerli entrambi.
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Consentire l'accesso a tutti i file?
+	Not now	Non ora
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft deve accedere a tutti i file per aprire e salvare file in "Archiviazione condivisa".
+	Skip the all-files-access prompt at launch	Non chiedere l'accesso a tutti i file all'avvio

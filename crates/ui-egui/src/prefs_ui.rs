@@ -1116,6 +1116,11 @@ fn humanize(key: &str) -> String {
     if key == "gpuMemoryMb" {
         return "GPU Memory (MB, 0 = Automatic)".into();
     }
+    // Workspace: Android's launch-time "All files access" ask (shown on Android alone, where the
+    // dialog hides every other platform's preference; see `prefs::ANDROID_ONLY`).
+    if key == "androidSkipAllFilesAccessPrompt" {
+        return "Skip the all-files-access prompt at launch".into();
+    }
     let mut s = String::new();
     for (i, ch) in key.chars().enumerate() {
         if i == 0 {

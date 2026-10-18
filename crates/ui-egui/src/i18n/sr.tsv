@@ -4328,3 +4328,8 @@ shape	Appearance	Izgled
 	Increase Brush Size	Povećaj veličinu četkice
 	Decrease Brush Hardness	Smanji tvrdoću četkice
 	Increase Brush Hardness	Povećaj tvrdoću četkice
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Дозволити приступ свим датотекама?
+	Not now	Не сада
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft-у је потребан приступ свим датотекама да би отварао и чувао датотеке у „Дељеном простору“.
+	Skip the all-files-access prompt at launch	Не приказуј захтев за приступ свим датотекама при покретању

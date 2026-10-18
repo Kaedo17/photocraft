@@ -3743,3 +3743,8 @@ curves	Smooth	Làm mượt
 	Increase Brush Size	Tăng kích thước cọ
 	Decrease Brush Hardness	Giảm độ cứng của cọ
 	Increase Brush Hardness	Tăng độ cứng của cọ
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Cho phép truy cập mọi tệp?
+	Not now	Để sau
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft cần quyền truy cập mọi tệp để mở và lưu tệp trong "Bộ nhớ chia sẻ".
+	Skip the all-files-access prompt at launch	Không hỏi quyền truy cập mọi tệp khi khởi động

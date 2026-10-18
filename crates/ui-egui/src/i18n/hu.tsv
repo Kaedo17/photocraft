@@ -4174,3 +4174,8 @@ cameraRaw	Yellow	Sárga
 	Increase Brush Size	Ecsetméret növelése
 	Decrease Brush Hardness	Ecsetkeménység csökkentése
 	Increase Brush Hardness	Ecsetkeménység növelése
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Engedélyezi az összes fájl elérését?
+	Not now	Most nem
+	PhotoCraft needs "All files access" to open and save files in shared storage.	A PhotoCraftnak az összes fájl elérésére van szüksége a „Megosztott tárhely” fájljainak megnyitásához és mentéséhez.
+	Skip the all-files-access prompt at launch	Indításkor ne kérdezze az összes fájl elérését

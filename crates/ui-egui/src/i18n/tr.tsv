@@ -3986,3 +3986,8 @@ cameraData	Lens	Lens
 	Increase Brush Size	Fırça boyutunu büyüt
 	Decrease Brush Hardness	Fırça sertliğini azalt
 	Increase Brush Hardness	Fırça sertliğini artır
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	Tüm dosyalara erişime izin verilsin mi?
+	Not now	Şimdi değil
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft, "Paylaşılan depolama"daki dosyaları açmak ve kaydetmek için tüm dosyalara erişim gerektirir.
+	Skip the all-files-access prompt at launch	Başlangıçta tüm dosyalara erişim sorulmasın

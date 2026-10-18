@@ -3934,3 +3934,8 @@ curves	Smooth	スムーズ
 	Increase Brush Size	ブラシサイズを大きく
 	Decrease Brush Hardness	ブラシの硬さを下げる
 	Increase Brush Hardness	ブラシの硬さを上げる
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	すべてのファイルへのアクセスを許可しますか？
+	Not now	後で
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft が「共有ストレージ」のファイルを開いたり保存したりするには、「すべてのファイルへのアクセス」が必要です。
+	Skip the all-files-access prompt at launch	起動時にすべてのファイルへのアクセスの確認を表示しない

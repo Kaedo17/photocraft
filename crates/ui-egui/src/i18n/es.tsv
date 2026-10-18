@@ -4217,3 +4217,8 @@ navigator	Zoom	Zoom
 	Increase Brush Size	Aumentar tamaño del pincel
 	Decrease Brush Hardness	Reducir dureza del pincel
 	Increase Brush Hardness	Aumentar dureza del pincel
+# Android launch-time "All files access" prompt (crates/ui-egui/src/android_access.rs)
+	Allow access to all files?	¿Permitir el acceso a todos los archivos?
+	Not now	Ahora no
+	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft necesita acceso a todos los archivos para abrir y guardar archivos en "Almacenamiento compartido".
+	Skip the all-files-access prompt at launch	Omitir el aviso de acceso a todos los archivos al iniciar
