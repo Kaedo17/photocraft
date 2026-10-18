@@ -132,7 +132,7 @@ pub fn toolbar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 + 6.0;
             // As tall as the tools, so the colour chips sit right under them (Photoshop); a column
             // taller than the window scrolls and keeps the chips at the bottom.
-            egui::ScrollArea::vertical()
+            crate::widgets::panel_scroll()
                 .id_salt("toolbar-columns")
                 .auto_shrink([false, true])
                 .max_height((ui.available_height() - footer).max(0.0))
@@ -2350,7 +2350,7 @@ fn layers(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let footer = widgets::footer_height(ui) + ui.spacing().item_spacing.y;
     let fill = ui.available_height() > footer + 60.0;
     let rows_h = if fill { ui.available_height() - footer } else { f32::INFINITY };
-    egui::ScrollArea::vertical()
+    crate::widgets::panel_scroll()
         // Keep each document's position independent, even when tab indices change (#5522).
         .id_salt(("layer-rows", doc.id.0))
         .max_height(rows_h)
@@ -3142,7 +3142,7 @@ fn history(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     // The dock gives History a fixed height: the rows scroll above the footer.
     let footer = if t.pro { widgets::footer_height(ui) + ui.spacing().item_spacing.y } else { 0.0 };
     let max_h = (ui.available_height() - footer).max(40.0);
-    egui::ScrollArea::vertical().id_salt("history-rows").max_height(max_h).auto_shrink([false, false]).show(ui, |ui| {
+    crate::widgets::panel_scroll().id_salt("history-rows").max_height(max_h).auto_shrink([false, false]).show(ui, |ui| {
         // Snapshots head the list and scroll with the states, so many of them never push the
         // footer out of a short dock.
         snap_cmd = snapshot_rows(app, ui, selected_snap);

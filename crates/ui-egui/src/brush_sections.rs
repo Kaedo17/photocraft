@@ -262,7 +262,7 @@ fn tip_grid(ui: &mut egui::Ui, id: &str, presets: &[BrushPreset], highlight: Opt
     let mut clicked = None;
     let frame = egui::Frame::NONE.fill(t.field).stroke(Stroke::new(1.0, t.field_border)).corner_radius(t.radius_sm as u8).inner_margin(egui::Margin::same(3));
     frame.show(ui, |ui| {
-        egui::ScrollArea::vertical().id_salt(id).max_height(104.0).auto_shrink([false, true]).show(ui, |ui| {
+        crate::widgets::panel_scroll().id_salt(id).max_height(104.0).auto_shrink([false, true]).show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.spacing_mut().item_spacing = vec2(2.0, 2.0);
                 for (i, p) in presets.iter().enumerate() {

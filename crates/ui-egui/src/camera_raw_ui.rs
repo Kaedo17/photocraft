@@ -1140,7 +1140,7 @@ fn draw(app: &mut PhotocraftApp, ctx: &egui::Context, own_window: bool) {
         super::camera_raw_scope_ui::header(&mut props, d, scope);
         d.scope.alt_tone = None;
         let mut dirty = false;
-        egui::ScrollArea::vertical().id_salt("camera-raw-props").show(&mut props, |ui| {
+        crate::widgets::panel_scroll().id_salt("camera-raw-props").show(&mut props, |ui| {
             ui.spacing_mut().item_spacing.y = 4.0;
             let p = &mut d.params;
             let alt = &mut d.scope.alt_tone;

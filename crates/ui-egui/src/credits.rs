@@ -300,7 +300,7 @@ fn contributors_in(app: &mut PhotocraftApp, ui: &mut egui::Ui, contributors: &[C
     } else if v.table {
         table(app, ui, &list, &mut v, height);
     } else {
-        egui::ScrollArea::vertical().id_salt("credits_bag").auto_shrink([false, false]).max_height(height).show(ui, |ui| {
+        crate::widgets::panel_scroll().id_salt("credits_bag").auto_shrink([false, false]).max_height(height).show(ui, |ui| {
             // Spacing alone separates the names: a "·" between them started some lines.
             ui.spacing_mut().item_spacing = egui::vec2(14.0, 8.0);
             // Each name is one unit: otherwise egui flows a link that doesn't fit onto the next

@@ -665,7 +665,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
         painter.line_segment([mid.left_top(), mid.left_bottom()], Stroke::new(1.0, t.separator));
         update_thumbs(d, ctx, 6);
         let mut mu = ui.new_child(egui::UiBuilder::new().max_rect(mid.shrink2(vec2(8.0, 8.0))));
-        egui::ScrollArea::vertical().id_salt("gallery-tree").show(&mut mu, |ui| {
+        crate::widgets::panel_scroll().id_salt("gallery-tree").show(&mut mu, |ui| {
             for (ci, cat) in GALLERY_CATEGORIES.iter().enumerate() {
                 let icon = if d.open[ci] { "folder-open" } else { "folder" };
                 let r = ui.horizontal(|ui| {
@@ -740,7 +740,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
         widgets::hairline(&mut ru);
         let list_h = 190.0;
         let params_h = (inner.height() - 110.0 - list_h).max(80.0);
-        egui::ScrollArea::vertical().id_salt("gallery-params").max_height(params_h).show(&mut ru, |ui| {
+        crate::widgets::panel_scroll().id_salt("gallery-params").max_height(params_h).show(&mut ru, |ui| {
             let sel = d.selected;
             let e = &mut d.effects[sel];
             for p in parse_spec(e.filter.params_doc()) {
@@ -794,7 +794,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
         let lr = ERect::from_min_max(pos2(inner.left(), list_top), inner.max);
         let mut lu = ui.new_child(egui::UiBuilder::new().max_rect(lr));
         widgets::hairline(&mut lu);
-        egui::ScrollArea::vertical().id_salt("gallery-layers").max_height(list_h - 44.0).show(&mut lu, |ui| {
+        crate::widgets::panel_scroll().id_salt("gallery-layers").max_height(list_h - 44.0).show(&mut lu, |ui| {
             let mut toggle = None;
             for i in (0..d.effects.len()).rev() {
                 let sel = i == d.selected;

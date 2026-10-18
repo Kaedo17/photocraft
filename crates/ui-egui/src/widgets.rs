@@ -1559,24 +1559,59 @@ pub fn menu_scroll<R>(ui: &mut Ui, add_contents: impl FnOnce(&mut Ui) -> R) -> R
 }
 
 /// The scroll area every menu body runs in: `max_height` points tall, and draggable to scroll with
-/// any pointer. See [`menu_drag`] for why the drag is forced on.
+/// any pointer. See [`drag_source`] for why the drag does not depend on the touch detection.
 fn menu_scroll_area(max_height: f32) -> egui::ScrollArea {
-    use egui::containers::scroll_area::ScrollSource;
-    egui::ScrollArea::vertical().scroll_source(ScrollSource { drag: menu_drag(), ..ScrollSource::ALL }).max_height(max_height).min_scrolled_height(max_height)
+    egui::ScrollArea::vertical().scroll_source(drag_source()).max_height(max_height).min_scrolled_height(max_height)
 }
 
-/// How a menu's contents respond to a drag: always, with the scroll bar and the wheel too.
+/// The vertical scroll area every panel a finger may pan runs in (the dock's bodies — Layers,
+/// Brushes, Properties — and the taller dialogs): a drag scrolls it with whatever pointer is in
+/// the user's hand, not only once egui has detected a touch screen (see [`drag_source`]).
+///
+/// The scroll bar and the wheel behave exactly as egui's own area would; on a touch screen
+/// [`touch_scroll_target`] widens the bar's hit so a fingertip can land on it.
+pub fn panel_scroll() -> egui::ScrollArea {
+    egui::ScrollArea::vertical().scroll_source(drag_source())
+}
+
+/// How the contents of a scroll area a finger uses answer a drag: always, with the wheel and the
+/// scroll bar exactly as usual.
 ///
 /// egui's own default (`DragScroll::OnTouch`) switches drag-to-scroll on only once
-/// `InputState::has_touch_screen` has seen an `Event::Touch`. On Android it never has
-/// (`stamp_android_modifiers` turns touches into synthesized clicks, and winit delivers the
-/// events it has), so a finger drag on the Edit menu was swallowed whole and the rows below the
-/// fold (Preferences, the last of over 40) could not be reached at all. A menu must never depend
-/// on that detection: if it is taller than the window it has to scroll, whatever pointer the user
-/// is holding. The wheel and the scroll bar are untouched.
-fn menu_drag() -> egui::containers::scroll_area::DragScroll {
-    egui::containers::scroll_area::DragScroll::Always
+/// `InputState::has_touch_screen` has seen an `Event::Touch`. On the SM-X736B (Galaxy Tab S11)
+/// that gate is open for the app's own finger input — measured on the pre-fix 0.9.0 build, a
+/// finger drag pans both a menu taller than the window and a dock panel body — so this is not the
+/// repair of a touch bug: it is the gesture not depending on a detection. A window with no touch
+/// screen (a host, a desktop, a docked trackpad, a mouse) has no touch state at all, and the
+/// harness drives these same widgets with a plain pointer, so the drag is on by construction.
+fn drag_source() -> egui::containers::scroll_area::ScrollSource {
+    use egui::containers::scroll_area::{DragScroll, ScrollSource};
+    ScrollSource { drag: DragScroll::Always, ..ScrollSource::ALL }
 }
+
+/// A fingertip cannot aim at a 10-point scroll bar: on a touch screen, widen the bar's interaction
+/// target to [`TOUCH_BAR_TARGET`] points.
+///
+/// The themes build a `ScrollStyle::thin`, whose `bar_width` is both the widest the bar draws and
+/// the whole width inside which egui hit-tests it — ten points, of which four are drawn while it
+/// floats untouched. A finger that must grab a bar instead of dragging the panel misses that band;
+/// the target is widened once, the first frame a touch screen is in play. Because the bar floats it
+/// still draws four points until it is touched and only then widens to the target, so a desktop
+/// window looks unchanged.
+pub fn touch_scroll_target(ctx: &egui::Context) {
+    if !(cfg!(target_os = "android") || ctx.input(|i| i.has_touch_screen())) {
+        return;
+    }
+    let key = egui::Id::new("photocraft-touch-scroll-target");
+    if ctx.data(|d| d.get_temp::<bool>(key)).unwrap_or(false) {
+        return;
+    }
+    ctx.all_styles_mut(|s| s.spacing.scroll.bar_width = s.spacing.scroll.bar_width.max(TOUCH_BAR_TARGET));
+    ctx.data_mut(|d| d.insert_temp(key, true));
+}
+
+/// The scroll bar's interaction target on a touch screen, in points.
+const TOUCH_BAR_TARGET: f32 = 24.0;
 
 /// Gap kept between a context menu and the window's edges, and the shortest it gets.
 const MENU_EDGE: f32 = 4.0;
@@ -2492,6 +2527,58 @@ mod tests {
         let mut h = mode_dropdown(false);
         wheel(&mut h, egui::MouseWheelUnit::Line, egui::vec2(0.0, -1.0), Modifiers::NONE);
         assert_eq!(*h.state(), 0);
+    }
+
+    #[test]
+    fn a_panel_body_scrolls_under_a_plain_pointer() {
+        use egui_kittest::{Harness, kittest::Queryable};
+
+        // What the dock's panels run in. The harness sends no touch event, which is the case
+        // egui's `DragScroll::OnTouch` default leaves inert: the drag has to pan the body anyway.
+        let mut h = Harness::builder().with_size(egui::vec2(240.0, 160.0)).build_ui(|ui| {
+            super::panel_scroll().id_salt("probe").max_height(150.0).auto_shrink([false, false]).show(ui, |ui| {
+                for row in 0..40 {
+                    ui.label(format!("row {row}"));
+                }
+            });
+        });
+        h.run_steps(3);
+        let before = h.get_by_label_contains("row 5").rect().top();
+        h.drag_at(egui::pos2(120.0, before + 4.0));
+        h.run();
+        for y in [before - 20.0, before - 45.0, before - 70.0] {
+            h.hover_at(egui::pos2(120.0, y));
+            h.run();
+        }
+        h.drop_at(egui::pos2(120.0, before - 70.0));
+        h.run_steps(4);
+        let after = h.get_by_label_contains("row 5").rect().top();
+        assert!(after < before - 1.0, "a drag should pan the panel body: {before} -> {after}");
+    }
+
+    #[test]
+    fn a_touch_screen_widens_the_scroll_bar_target() {
+        let bar_width = |events: Vec<egui::Event>| {
+            let ctx = egui::Context::default();
+            let idle = ctx.style_of(egui::Theme::Dark).spacing.scroll.bar_width;
+            ctx.begin_pass(egui::RawInput { events, ..Default::default() });
+            super::touch_scroll_target(&ctx);
+            let width = ctx.style_of(egui::Theme::Dark).spacing.scroll.bar_width;
+            ctx.end_pass().drop_without_applying_deltas();
+            (idle, width)
+        };
+        let (idle, plain) = bar_width(Vec::new());
+        assert_eq!(plain, idle, "a window with no touch screen keeps the theme's bar");
+        let touch = egui::Event::Touch {
+            device_id: egui::TouchDeviceId(3),
+            id: egui::TouchId(1),
+            phase: egui::TouchPhase::Start,
+            pos: egui::pos2(10.0, 10.0),
+            force: None,
+        };
+        let (_, wide) = bar_width(vec![touch]);
+        assert!(wide >= super::TOUCH_BAR_TARGET, "a finger has to be able to land on the bar: {wide}");
+        assert!(wide > plain, "the target only ever widens: {plain} -> {wide}");
     }
 }
 

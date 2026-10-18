@@ -1267,7 +1267,7 @@ fn prefs_body(ui: &mut egui::Ui, f: &mut Map<String, Value>, system: Option<egui
                 || tl!(&title).to_lowercase().contains(&search.trim().to_lowercase());
             let filter = if show_all { "" } else { search.trim() };
             ui.add_space(6.0);
-            egui::ScrollArea::vertical().max_height(content_height - 30.0).id_salt("prefs-scroll").show(ui, |ui| {
+            crate::widgets::panel_scroll().max_height(content_height - 30.0).id_salt("prefs-scroll").show(ui, |ui| {
                 let order: Vec<String> =
                     f.get("__order").and_then(|o| o.get(&section)).and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
                 if !has_visible_fields(&values, &section) {
@@ -1862,7 +1862,7 @@ fn shortcuts_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String
         }
     }
     let needle = filter.to_ascii_lowercase();
-    egui::ScrollArea::vertical().max_height(420.0).id_salt("shortcuts-scroll").show(ui, |ui| {
+    crate::widgets::panel_scroll().max_height(420.0).id_salt("shortcuts-scroll").show(ui, |ui| {
         let mut last_top = String::new();
         egui::Grid::new("shortcut-grid").num_columns(3).spacing([12.0, 3.0]).striped(true).show(ui, |ui| {
             for (id, label, path, def) in &items {
@@ -2231,7 +2231,7 @@ fn save_text(app: &mut PhotocraftApp, suggested: &str, text: String) -> Result<V
 
 fn toolbar_tab(ui: &mut egui::Ui, f: &mut Map<String, Value>) {
     let mut hidden: Vec<String> = f.get("toolbarHidden").and_then(|v| serde_json::from_value(v.clone()).ok()).unwrap_or_default();
-    egui::ScrollArea::vertical().max_height(380.0).id_salt("toolbar-scroll").show(ui, |ui| {
+    crate::widgets::panel_scroll().max_height(380.0).id_salt("toolbar-scroll").show(ui, |ui| {
         egui::Grid::new("toolbar-grid").num_columns(2).spacing([16.0, 4.0]).show(ui, |ui| {
             for tool in crate::state::Tool::ALL {
                 let name = format!("{tool:?}");
@@ -2270,7 +2270,7 @@ fn presets_body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, 
         .and_then(|v| serde_json::from_value::<Vec<String>>(v).ok())
         .unwrap_or_default();
     let mut selected = f.get("selected").and_then(Value::as_u64).unwrap_or(0) as usize;
-    egui::ScrollArea::vertical().max_height(260.0).id_salt("preset-list").show(ui, |ui| {
+    crate::widgets::panel_scroll().max_height(260.0).id_salt("preset-list").show(ui, |ui| {
         for (i, name) in list.iter().enumerate() {
             if ui.selectable_label(i == selected, name).clicked() {
                 selected = i;

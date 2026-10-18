@@ -528,7 +528,7 @@ pub fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui, shown: &[Group], mut bod
                 // No scroll fade: it darkens real colours, swatches and previews at the edge
                 // (#2726); the scroll bar already shows there is more.
                 ui.spacing_mut().scroll.fade.strength = 0.0;
-                egui::ScrollArea::vertical()
+                crate::widgets::panel_scroll()
                     .id_salt(("dock-scroll", g.key(), tab))
                     .max_height(inner)
                     .auto_shrink([false, false])

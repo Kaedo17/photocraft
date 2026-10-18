@@ -677,7 +677,7 @@ pub fn panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             *expanded = true;
         }
     }
-    egui::ScrollArea::vertical().id_salt("actions-rows").max_height(max_h).min_scrolled_height(max_h).auto_shrink([false, false]).show(ui, |ui| {
+    crate::widgets::panel_scroll().id_salt("actions-rows").max_height(max_h).min_scrolled_height(max_h).auto_shrink([false, false]).show(ui, |ui| {
         if rows.is_empty() {
             ui.label(egui::RichText::new(tl!("Record ● a sequence of edits, then play ▶ it on any document.")).color(t.text_faint).size(11.5));
         }

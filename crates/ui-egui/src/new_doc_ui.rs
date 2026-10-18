@@ -415,7 +415,7 @@ fn saved_presets(app: &mut crate::PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<
         return false;
     }
     let mut create = false;
-    egui::ScrollArea::vertical().id_salt("saved-document-presets").max_height(320.0).show(ui, |ui| {
+    crate::widgets::panel_scroll().id_salt("saved-document-presets").max_height(320.0).show(ui, |ui| {
         for preset in &presets {
             ui.push_id(&preset.name, |ui| {
                 ui.horizontal(|ui| {
@@ -543,7 +543,7 @@ pub fn body(app: &mut crate::PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<Strin
             ui.add_space(6.0);
             let card = vec2(164.0, 112.0);
             // Up to 20 recent documents: scroll past three rows rather than grow the dialog.
-            egui::ScrollArea::vertical().id_salt("new-document-presets").max_height(3.0 * (card.y + 8.0)).show(ui, |ui| {
+            crate::widgets::panel_scroll().id_salt("new-document-presets").max_height(3.0 * (card.y + 8.0)).show(ui, |ui| {
                 for row in presets.chunks(3) {
                     ui.horizontal(|ui| {
                         ui.spacing_mut().item_spacing.x = 8.0;

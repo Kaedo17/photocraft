@@ -44,7 +44,7 @@ pub fn panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let mut action: Option<(&'static str, Value)> = None;
     let mut select: Option<u32> = None;
     let row_h = 26.0;
-    egui::ScrollArea::vertical().id_salt("comps-rows").max_height(max_h).auto_shrink([false, true]).show(ui, |ui| {
+    crate::widgets::panel_scroll().id_salt("comps-rows").max_height(max_h).auto_shrink([false, true]).show(ui, |ui| {
         // Last Document State.
         let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), row_h), Sense::click());
         if applied.is_none() {

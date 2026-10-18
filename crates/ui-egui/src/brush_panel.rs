@@ -361,7 +361,7 @@ fn settings_tab(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             // No title above the options (#3477): the selected row in the list names them, as
             // in Photoshop, and the line is better spent on the options.
             let on = section_flag(&mut b, section).is_none_or(|f| *f);
-            egui::ScrollArea::vertical().id_salt(("brush-section", section)).max_height(450.0).auto_shrink([false, false]).show(ui, |ui| {
+            crate::widgets::panel_scroll().id_salt(("brush-section", section)).max_height(450.0).auto_shrink([false, false]).show(ui, |ui| {
                 ui.set_width(WIDTH - 204.0);
                 // A section that's off shows its options greyed out (Photoshop). A tip picked in
                 // the grid copies the tip fields only — the dynamics sections stay (Photoshop).

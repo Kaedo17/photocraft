@@ -290,7 +290,7 @@ fn delete_body(app: &PhotocraftApp, ui: &mut egui::Ui, fields: &mut Map<String, 
     ui.add_space(4.0);
     let toggle = ui.input(|i| i.modifiers.command || i.modifiers.shift);
     egui::Frame::NONE.stroke(egui::Stroke::new(1.0, crate::theme::Tokens::get(ui.ctx()).field_border)).inner_margin(2.0).show(ui, |ui| {
-        egui::ScrollArea::vertical().id_salt("crop-preset-delete").max_height(220.0).auto_shrink([false, true]).show(ui, |ui| {
+        crate::widgets::panel_scroll().id_salt("crop-preset-delete").max_height(220.0).auto_shrink([false, true]).show(ui, |ui| {
             ui.spacing_mut().item_spacing.y = 0.0;
             // Full-width rows, names on the left.
             ui.with_layout(egui::Layout::top_down_justified(egui::Align::Min), |ui| {

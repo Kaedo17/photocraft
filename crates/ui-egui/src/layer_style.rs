@@ -894,7 +894,7 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
                 });
                 ui.add_space(8.0);
                 let ctx = ui.ctx().clone();
-                egui::ScrollArea::vertical().max_height(340.0).id_salt("layer-style-presets-main").show(ui, |ui| {
+                crate::widgets::panel_scroll().max_height(340.0).id_salt("layer-style-presets-main").show(ui, |ui| {
                     for group in &app.session.presets.styles {
                         ui.label(RichText::new(&group.name).size(12.0).color(t.text_dim));
                         ui.add_space(3.0);

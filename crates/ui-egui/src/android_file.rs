@@ -365,7 +365,7 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
                 ui.label(tl!("(empty)"));
             }
         }
-        egui::ScrollArea::vertical().max_height(260.0).auto_shrink([false, true]).show(ui, |ui| {
+        crate::widgets::panel_scroll().max_height(260.0).auto_shrink([false, true]).show(ui, |ui| {
             match view_tile_width(view) {
                 None => {
                     for sub in &dirs {

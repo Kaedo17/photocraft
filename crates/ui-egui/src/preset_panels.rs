@@ -399,7 +399,7 @@ pub(crate) fn browser(
     let footer_id = egui::Id::new(("preset-footer", panel));
     let footer_h = ui.data(|d| d.get_temp::<f32>(footer_id)).unwrap_or(FOOTER_GUESS);
     let max_h = max_h.min((ui.available_height() - footer_h).max(0.0));
-    egui::ScrollArea::vertical().id_salt(("preset-scroll", panel)).max_height(max_h).min_scrolled_height(max_h.min(64.0)).auto_shrink([false, true]).show(
+    crate::widgets::panel_scroll().id_salt(("preset-scroll", panel)).max_height(max_h).min_scrolled_height(max_h.min(64.0)).auto_shrink([false, true]).show(
         ui,
         |ui| {
             ui.spacing_mut().item_spacing = vec2(0.0, 2.0);
@@ -950,7 +950,7 @@ pub fn shape_picker(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let resp = resp.on_hover_text(&cur);
     egui::Popup::menu(&resp).close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside).show(|ui| {
         ui.set_width(232.0);
-        egui::ScrollArea::vertical().max_height(320.0).show(ui, |ui| {
+        crate::widgets::panel_scroll().max_height(320.0).show(ui, |ui| {
             for g in &groups {
                 ui.label(egui::RichText::new(&g.name).color(t.text_dim).size(11.0));
                 ui.horizontal_wrapped(|ui| {
@@ -1052,7 +1052,7 @@ pub fn tool_presets_panel(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             }
         });
     }
-    egui::ScrollArea::vertical().id_salt("tool-presets").max_height(260.0).auto_shrink([false, true]).show(ui, |ui| {
+    crate::widgets::panel_scroll().id_salt("tool-presets").max_height(260.0).auto_shrink([false, true]).show(ui, |ui| {
         ui.spacing_mut().item_spacing.y = 0.0;
         if items.is_empty() {
             empty(ui, if only { tl!("No presets for the current tool.") } else { tl!("No tool presets.") });

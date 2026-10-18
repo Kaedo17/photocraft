@@ -1962,6 +1962,8 @@ impl eframe::App for PhotocraftApp {
         let ctx = ui.ctx().clone();
         self.hover_layer = None;
         i18n::set_current(i18n::Lang::from_pref(&self.session.prefs().interface.language));
+        // On a touch screen a fingertip has to be able to grab a scroll bar (widgets.rs).
+        widgets::touch_scroll_target(&ctx);
         // Fonts registered via set_fonts only take effect next frame; named families would panic now.
         if !self.fonts_ready {
             ctx.request_repaint();

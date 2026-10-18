@@ -330,7 +330,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
         painter.rect_filled(right, 0.0, t.dock);
         painter.line_segment([right.left_top(), right.left_bottom()], Stroke::new(1.0, t.separator));
         let mut props = ui.new_child(egui::UiBuilder::new().max_rect(right.shrink2(vec2(14.0, 10.0))));
-        egui::ScrollArea::vertical().id_salt("awa-props").show(&mut props, |ui| {
+        crate::widgets::panel_scroll().id_salt("awa-props").show(&mut props, |ui| {
             ui.spacing_mut().item_spacing.y = 5.0;
             widgets::section_label(ui, tl!("Correction"));
             let mut model = d.params.model;

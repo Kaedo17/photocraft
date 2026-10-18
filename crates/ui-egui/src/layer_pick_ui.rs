@@ -87,7 +87,7 @@ pub fn show(app: &mut PhotocraftApp, ctx: &Context) {
             ui.set_width(w);
             ui.spacing_mut().item_spacing.y = 0.0;
             // A long list scrolls instead of running off the screen.
-            egui::ScrollArea::vertical().max_height((screen.height() - 24.0).max(48.0)).show(ui, |ui| {
+            crate::widgets::panel_scroll().max_height((screen.height() - 24.0).max(48.0)).show(ui, |ui| {
                 ui.set_width(w);
                 for (layer, name) in &menu.layers {
                     let b = egui::Button::selectable(Some(*layer) == active, name.as_str()).truncate().min_size(egui::vec2(w, 22.0));

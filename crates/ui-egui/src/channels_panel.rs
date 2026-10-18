@@ -92,7 +92,7 @@ pub fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let rows_h = if fill { ui.available_height() - footer } else { f32::INFINITY };
     let mut mask_click = None;
     let mut drawn = Vec::new();
-    egui::ScrollArea::vertical().max_height(rows_h).min_scrolled_height(if fill { rows_h } else { 0.0 }).auto_shrink([false, !fill]).show(ui, |ui| {
+    crate::widgets::panel_scroll().max_height(rows_h).min_scrolled_height(if fill { rows_h } else { 0.0 }).auto_shrink([false, !fill]).show(ui, |ui| {
         for row in rows {
             let (name, thumb_idx, slot, visible, selected) = match row {
                 Row::Composite => (

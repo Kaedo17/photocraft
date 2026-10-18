@@ -133,7 +133,7 @@ pub fn button(
         // An Area remembers its previous size. Let a newly selected dashed style grow the
         // body before the ScrollArea measures it, then shrink back to the actual content.
         ui.set_max_height(height);
-        egui::ScrollArea::vertical().max_height(height).auto_shrink([false, true]).show(ui, |ui| {
+        crate::widgets::panel_scroll().max_height(height).auto_shrink([false, true]).show(ui, |ui| {
             ui.label(egui::RichText::new(tl!("Stroke Options")).strong());
             let s = &mut e.draft;
             for name in ["Solid", "Dashed", "Dotted"] {
