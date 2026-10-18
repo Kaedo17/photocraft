@@ -50,7 +50,7 @@ pub fn load(ctx: &egui::Context, paths: &[std::path::PathBuf]) -> Vec<String> {
 
 /// Decode one file to a [`Thumb`] (a texture at most [`MAX_EDGE`] on the long side).
 fn decode(ctx: &egui::Context, path: &Path) -> Thumb {
-    let thumb = (|| {
+    (|| {
         let bytes = std::fs::read(path).ok()?;
         let source = if path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("pcraft")) {
             // The native format embeds a PNG thumbnail of its own; decode that.
@@ -81,8 +81,7 @@ fn decode(ctx: &egui::Context, path: &Path) -> Thumb {
             egui::TextureOptions::LINEAR,
         );
         Some((tex, [tw, th]))
-    })();
-    thumb
+    })()
 }
 
 #[cfg(test)]
@@ -108,7 +107,7 @@ mod tests {
         std::fs::write(&path, png_bytes(300, 128, &vec![180u8; 300 * 128 * 4])).unwrap();
         let ctx = egui::Context::default();
         assert!(get(&ctx, &path).is_none(), "not decoded until asked");
-        assert_eq!(load(&ctx, &[path.clone()]), vec![path.to_string_lossy().into_owned()]);
+        assert_eq!(load(&ctx, std::slice::from_ref(&path)), vec![path.to_string_lossy().into_owned()]);
         let (tex, size) = get(&ctx, &path).expect("decoded");
         assert_eq!(tex.size(), [size[0] as usize, size[1] as usize]);
         assert!(size[0] <= MAX_EDGE && size[1] <= MAX_EDGE, "at most {MAX_EDGE} on the long side: {size:?}");
@@ -117,7 +116,7 @@ mod tests {
             "kept the picture's aspect: {size:?}"
         );
         // Cached: a second pass does no work.
-        assert!(load(&ctx, &[path.clone()]).is_empty());
+        assert!(load(&ctx, std::slice::from_ref(&path)).is_empty());
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -127,9 +126,9 @@ mod tests {
         let txt = dir.join("notes.txt");
         std::fs::write(&txt, b"not an image").unwrap();
         let ctx = egui::Context::default();
-        assert_eq!(load(&ctx, &[txt.clone()]), vec![txt.to_string_lossy().into_owned()], "probed once");
+        assert_eq!(load(&ctx, std::slice::from_ref(&txt)), vec![txt.to_string_lossy().into_owned()], "probed once");
         assert!(get(&ctx, &txt).is_none(), "and stays None (cached)");
-        assert!(load(&ctx, &[txt.clone()]).is_empty(), "no second probe");
+        assert!(load(&ctx, std::slice::from_ref(&txt)).is_empty(), "no second probe");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
