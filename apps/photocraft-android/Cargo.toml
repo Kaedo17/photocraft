@@ -18,14 +18,8 @@ crate-type = ["cdylib"]
 # `from_raw` have no safe form), needed to check and request the "All files access" grant — the
 # unsafe stays in this entry trampoline, never in the shared photocraft/ui-egui crates, which
 # receive plain closures instead. It therefore sets the workspace's *clippy* denials itself (every
-# one of them) and leaves `unsafe_code` alone.
-[lints.clippy]
-unwrap_used = "deny"
-expect_used = "deny"
-panic = "deny"
-unimplemented = "deny"
-todo = "deny"
-unreachable = "deny"
+# one of them, in `src/lib.rs`, so the scorecard's never-crash count sees them) and leaves
+# `unsafe_code` alone.
 
 [dependencies]
 photocraft = { path = "../photocraft" }

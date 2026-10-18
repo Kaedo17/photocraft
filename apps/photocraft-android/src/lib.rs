@@ -19,6 +19,12 @@
 //!
 //! On every other target this crate is empty: only Android's loader ever looks for `android_main`.
 
+// The workspace's clippy denials, set here because this crate deliberately does not inherit the
+// workspace lints (see `Cargo.toml`): Android's NativeActivity ABI needs an unmangled export, and
+// edition 2024 spells that `#[unsafe(no_mangle)]`, which the workspace-forbidden `unsafe_code`
+// lint rejects. Every other clippy denial is the same as `crates/*`'s.
+#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
+
 #[cfg(target_os = "android")]
 mod android_access;
 
