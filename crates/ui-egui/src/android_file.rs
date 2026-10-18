@@ -383,11 +383,16 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
                     }
                 }
                 Some(width) => {
-                    // Folders first, then files; inside a cell the tile is one button the full
-                    // cell wide, so the whole tile toggles or enters. Drag-to-scroll comes from
-                    // the surrounding ScrollArea (egui's own drag path, forced on like the
-                    // menus' — a finger scrolls the grid).
-                    let per_row = (ui.available_width() / (width + 8.0)).floor().max(1.0) as usize;
+                    // Folders first, then files, laid out in rows of as many tiles as the modal
+                    // is wide; inside a cell the name button is the whole tile's click target.
+                    //
+                    // Measured on the SM-X736B: a finger drag inside this grid does nothing,
+                    // where the same gesture pans a dock panel or a menu taller than the window.
+                    // This view is a dialog, and egui's `Area` documents that its widget keeps
+                    // drag hit-tests over its own body (`containers/area.rs`), so the bar and the
+                    // wheel are the way through a long listing here.
+                    let gap = ui.spacing().item_spacing.x;
+                    let per_row = ((ui.available_width() + gap) / (width + gap)).floor().max(1.0) as usize;
                     // Feed the decode budget while the view is up: every frame fills up to two
                     // undecoded tiles, and the repaints continue while any are pending.
                     if crate::thumbs::load(ctx, &files).len() == crate::thumbs::BUDGET as usize {
@@ -398,60 +403,76 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
                         if row.is_empty() {
                             return;
                         }
-                        ui.vertical(|ui| {
+                        ui.horizontal(|ui| {
                             for path in row.iter() {
-                                let is_dir = dirs.contains(*path);
-                                let label = path.file_name().and_then(|n| n.to_str()).unwrap_or("?").to_string();
-                                // A folder keeps the trailing "/", in this view too.
-                                let name: String = if is_dir { format!("{label}/") } else { label.clone() };
-                                let name: String = name.chars().take((width / 7.0) as usize).collect();
-                                // The tile: the file's decoded picture (or its extension glyph
-                                // until one decodes / when nothing does) above the name. The slot
-                                // is allocated, never interactive; the name button under it is
-                                // the whole tile's click target and its accessible label.
-                                let slot = width * 0.62;
-                                let (slot_rect, _) = ui.allocate_exact_size(egui::vec2(width, slot), egui::Sense::hover());
-                                let thumb = (!is_dir).then(|| crate::thumbs::get(ctx, path)).flatten();
-                                match &thumb {
-                                    Some((tex, size)) => {
-                                        let fit = (slot / size[0].max(size[1]) as f32).min(1.0);
-                                        let sz = egui::vec2(size[0] as f32 * fit, size[1] as f32 * fit);
-                                        let at = slot_rect.center() - sz * 0.5;
-                                        ui.painter().image(
-                                            tex.id(),
-                                            egui::Rect::from_min_size(at, sz),
-                                            egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
-                                            egui::Color32::WHITE,
-                                        );
+                                // One tile: the picture above its name, so a row of tiles stays a
+                                // row whatever the tile height is.
+                                ui.vertical(|ui| {
+                                    let is_dir = dirs.contains(*path);
+                                    let label = path.file_name().and_then(|n| n.to_str()).unwrap_or("?").to_string();
+                                    // A folder keeps the trailing "/", in this view too.
+                                    let name: String = if is_dir { format!("{label}/") } else { label.clone() };
+                                    let name: String = name.chars().take((width / 7.0) as usize).collect();
+                                    // The tile: the file's decoded picture (or its type glyph
+                                    // until one decodes / when nothing does) above the name. The
+                                    // slot is allocated, never interactive; the name button under
+                                    // it is the whole tile's click target and its accessible label.
+                                    let slot = width * 0.62;
+                                    let (slot_rect, _) = ui.allocate_exact_size(egui::vec2(width, slot), egui::Sense::hover());
+                                    let thumb = (!is_dir).then(|| crate::thumbs::get(ctx, path)).flatten();
+                                    match &thumb {
+                                        Some((tex, size)) => {
+                                            let fit = (slot / size[0].max(size[1]) as f32).min(1.0);
+                                            let sz = egui::vec2(size[0] as f32 * fit, size[1] as f32 * fit);
+                                            let at = slot_rect.center() - sz * 0.5;
+                                            ui.painter().image(
+                                                tex.id(),
+                                                egui::Rect::from_min_size(at, sz),
+                                                egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                                                egui::Color32::WHITE,
+                                            );
+                                        }
+                                        None if is_dir => {
+                                            // A directory has no picture to show: draw the folder
+                                            // itself, in the theme's accent. The type glyph would
+                                            // make "FILE" of every folder (no extension to show).
+                                            let ink = ui.style().visuals.selection.bg_fill.gamma_multiply(0.85);
+                                            let body = egui::Rect::from_center_size(slot_rect.center(), egui::vec2(slot * 0.6, slot * 0.44));
+                                            let tab = egui::Rect::from_min_size(body.min, egui::vec2(body.width() * 0.42, body.height() * 0.3));
+                                            let corner = egui::CornerRadius::same((slot * 0.06).clamp(1.0, 8.0) as u8);
+                                            let painter = ui.painter();
+                                            painter.rect_filled(tab.translate(egui::vec2(0.0, -tab.height() * 0.6)), corner, ink);
+                                            painter.rect_filled(body, corner, ink);
+                                        }
+                                        None => {
+                                            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("FILE").to_uppercase();
+                                            ui.painter().text(
+                                                slot_rect.center(),
+                                                egui::Align2::CENTER_CENTER,
+                                                ext,
+                                                egui::FontId::proportional(slot * 0.3),
+                                                ui.style().visuals.weak_text_color(),
+                                            );
+                                        }
                                     }
-                                    None => {
-                                        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("FILE").to_uppercase();
+                                    let resp = ui.add_sized([width, 18.0], egui::Button::new(RichText::new(&name).small()));
+                                    if !is_dir && is_file && selected.contains(*path) {
                                         ui.painter().text(
-                                            slot_rect.center(),
-                                            egui::Align2::CENTER_CENTER,
-                                            ext,
-                                            egui::FontId::proportional(slot * 0.3),
-                                            ui.style().visuals.weak_text_color(),
+                                            slot_rect.right_top() + egui::vec2(-6.0, 4.0),
+                                            egui::Align2::RIGHT_TOP,
+                                            "✓",
+                                            egui::FontId::proportional(14.0),
+                                            ui.style().visuals.selection.bg_fill,
                                         );
                                     }
-                                }
-                                let resp = ui.add_sized([width, 18.0], egui::Button::new(RichText::new(&name).small()));
-                                if !is_dir && is_file && selected.contains(*path) {
-                                    ui.painter().text(
-                                        slot_rect.right_top() + egui::vec2(-6.0, 4.0),
-                                        egui::Align2::RIGHT_TOP,
-                                        "✓",
-                                        egui::FontId::proportional(14.0),
-                                        ui.style().visuals.selection.bg_fill,
-                                    );
-                                }
-                                if resp.clicked() {
-                                    if is_dir {
-                                        enter = Some((*path).clone());
-                                    } else {
-                                        toggle = Some(files.iter().position(|f| f == *path).unwrap_or(usize::MAX));
+                                    if resp.clicked() {
+                                        if is_dir {
+                                            enter = Some((*path).clone());
+                                        } else {
+                                            toggle = Some(files.iter().position(|f| f == *path).unwrap_or(usize::MAX));
+                                        }
                                     }
-                                }
+                                });
                             }
                         });
                         row.clear();
@@ -913,5 +934,32 @@ mod ui_tests {
         assert!(!f.h.state().android_file.is_open(), "the icon view answered the pick on the tap");
         let expected = f.base.join("Documents/Scene.psd").to_string_lossy().into_owned();
         assert_eq!(*out.borrow(), vec![(expected, b"pixels".to_vec())]);
+    }
+
+    #[test]
+    fn an_icon_view_lays_its_tiles_out_in_rows() {
+        let out: Picked = Rc::default();
+        let slot = out.clone();
+        let mut f = fixture("rows", move |app| {
+            // Open in the small-icon view: the toolbar's own switching is covered by
+            // `the_view_buttons_switch_the_listing`, and this test is about the tile layout.
+            app.session.execute("prefs.set", json!({"path": "workspace.pickerView", "value": "small"})).unwrap();
+            app.pick_file_bytes_filtered(&["psd"], move |_app, name, bytes| {
+                slot.borrow_mut().push((name, bytes));
+                Ok(json!("ok"))
+            })
+            .unwrap();
+        });
+        for name in ["aurora.psd", "basil.psd", "cobalt.psd", "delta.psd"] {
+            std::fs::write(f.base.join("Documents").join(name), b"pixels").unwrap();
+        }
+        f.h.run_steps(4);
+        assert_eq!(f.h.state().session.prefs().workspace.picker_view.name(), "small");
+        // Tiles fill a row before the next one starts: the second tile sits beside the first
+        // rather than under it (which is what a column of tiles looked like).
+        let first = f.h.get_by_label_contains("aurora.psd").rect();
+        let second = f.h.get_by_label_contains("basil.psd").rect();
+        assert!((first.top() - second.top()).abs() < 0.5, "tiles of one row line up: {first:?} {second:?}");
+        assert!(second.left() > first.left(), "the second tile is beside the first: {first:?} {second:?}");
     }
 }
