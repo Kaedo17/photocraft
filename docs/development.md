@@ -392,8 +392,24 @@ adb shell monkey -p ai.storyteller.photocraft -c android.intent.category.LAUNCHE
 
 `cargo apk` reads `[package.metadata.android]` in `apps/photocraft-android/Cargo.toml` (arm64-v8a,
 minSdk 28, the launcher icon under `res/`, and the exhaustive `configChanges`). A `--release` build
-needs `[package.metadata.android.signing.release]` pointing at a keystore; cargo-apk refuses to sign
-a release APK with the debug key.
+is signed from two environment variables — cargo-apk 0.10.0 reads no signing key out of the
+manifest. It derives them from the profile name (`CARGO_APK_<PROFILE>_KEYSTORE` plus `_PASSWORD`,
+so `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` for `--release`), and hands `apksigner` only `--ks-pass`
+(the *store* password, no `--key-pass` and no alias), so the key password must match the store
+password and the store must hold a single key:
+
+```sh
+CARGO_APK_RELEASE_KEYSTORE="$HOME/photocraft-release.jks" \
+CARGO_APK_RELEASE_KEYSTORE_PASSWORD="$(cat "$HOME/keystore-password.txt")" \
+cargo apk build -p photocraft-android --release    # target/release/apk/photocraft.apk
+```
+
+The keystore is a PKCS12 store made with
+`keytool -genkeypair -storetype PKCS12 -keyalg RSA -keysize 4096 -validity 10000 -alias photocraft`
+(`-storepass` and `-keypass` the same), held outside the repository with its password file beside it
+(mode 600): nothing signing-related is committed.
+`apksigner verify --print-certs target/release/apk/photocraft.apk` prints the signer's SHA-256
+fingerprint to check it against the keystore's.
 
 Android specifics:
 
@@ -405,7 +421,13 @@ Android specifics:
 - **Shared storage.** The browser offers `/storage/emulated/0` as a second root once the user grants
   **All files access** (`MANAGE_EXTERNAL_STORAGE`). The app can only check and ask for it: the entry
   crate does the JNI (`apps/photocraft-android/src/android_access.rs`, the project's one piece of
-  real `unsafe`) and hands the shared app plain closures in `photocraft::SharedStorageAccess`.
+  real `unsafe`) and hands the shared app plain closures in `photocraft::SharedStorageAccess`. When
+  the grant is missing at launch the shell asks once, with a short modal
+  (`crates/ui-egui/src/android_access.rs`, fired from the host's `started` hook): **Grant access**
+  opens Android's All-files-access page, and **Not now** is remembered
+  (`workspace.androidSkipAllFilesAccessPrompt`, an Android-only preference, so the desktop
+  Preferences dialog never shows it). The browser's own Grant access row keeps asking on demand
+  whatever that says.
 - **Input.** The vendored winit adds Android mouse and trackpad input
   ([`third_party/winit/README.md`](../third_party/winit/README.md)), and `stamp_android_modifiers`
   in `crates/ui-egui` supplies the keyboard modifiers winit never reports, so chords match.
@@ -425,9 +447,12 @@ Android specifics:
   the bar and the wheel are the way through a long listing in a dialog.
 - **Wasm is unaffected:** the app crate is not in the `cargo xtask wasm` set, and its desktop
   dependencies (rfd, arboard, accesskit, X11/Wayland) are gated behind `cfg(not(target_os = "android"))`.
-- **No release signing or store packaging yet** ([G18](gaps.md#g18-android-release-signing-and-store-packaging)):
-  the APK is signed with a local debug keystore for `adb install` only. A release build needs a
-  keystore (a `.p12` behind `[package.metadata.android.signing.release]`) and store accounts.
+- **Release signing** ([G18](gaps.md#g18-android-release-signing-and-store-packaging)): a
+  `--release` APK is signed from the two environment variables above, with a keystore held outside
+  the repository; debug builds stay on the throwaway debug key. It is a different signer than the
+  debug key, so `adb install -r` over a debug install fails — `adb uninstall` first (which drops the
+  app's private preferences and the All-files-access grant). Store packaging and accounts are still
+  open.
 
 ## Web build
 

@@ -271,21 +271,23 @@ what an agent can't finish alone.
 - **Missing:** the arm64 APK launches, renders, saves and browses, and once the user grants
   "All files access" it reaches shared storage too — a file can be picked from `Download/` and a
   save can land in a shared folder (verified on a Samsung Tab S11, Android 16, and on a phone at
-  720x1612, where the picker's icon views, a dialog body taller than the window scrolling and the
-  whole-tile tap were measured; see the [Android build](development.md#android-build)). What it
-  still lacks: the APK is signed with a
-  local debug keystore for `adb install` only — no release signing
-  (`[package.metadata.android.signing.release]`, a keystore + password the packaging secrets have
-  to hold, as `packaging/` does for the desktop installers) and no store packaging (Google Play /
-  F-Droid); the grant has to be given by hand from Android's settings page (an app can never hold
-  it silently, and Android can withdraw it); and there are no system file or message dialogs —
-  the in-app browser stands in for the file ones.
-- **Estimate:** 20–45 h. **Human:** a release keystore and store accounts.
+  720x1612, Android 13, where the picker's icon views, a dialog body taller than the window
+  scrolling and the whole-tile tap were measured; see the
+  [Android build](development.md#android-build)). A missing grant is asked for once at launch with
+  a short in-app modal: **Grant access** opens Android's All-files-access page and **Not now** is
+  remembered (`workspace.androidSkipAllFilesAccessPrompt`), so reaching shared storage no longer
+  needs a manual trip through Settings first — though the grant itself stays user-given and
+  Android can withdraw it at any time. A `--release` APK is signed with a project keystore held
+  outside the repository. What it still lacks: store packaging (Google Play / F-Droid) and the
+  store accounts that go with it; and there are no system file or message dialogs — the in-app
+  browser stands in for the file ones.
+- **Estimate:** 20–45 h. **Human:** store accounts.
 
 ## Revision history
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-19 | minor | G18: the branch synced with upstream `main` (122 commits), and Android release signing measured: `cargo apk build --release` signed by `CARGO_APK_RELEASE_KEYSTORE` + `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` (a PKCS12 keystore held outside the repository) produced a 30,290,756-byte APK whose `apksigner verify --print-certs` SHA-256 `95F06A22397A0DEBBEC36A84E4B14AFF56B0E28E74135B3805DA01CE26FF89F4` matches the keystore's; installed on a TECNO KJ5 (Android 13) over an uninstall of the debug build and run there. A missing "All files access" grant is now asked for once at launch (**Grant access** opens `Settings$AppManageExternalStorageActivity`; toggling that page's switch sets `MANAGE_EXTERNAL_STORAGE: allow`; **Not now** writes the Android-only `workspace.androidSkipAllFilesAccessPrompt`) |
 | 2026-10-18 | minor | G18: the port verified on a 720x1612 phone (Android 13, landscape window 1532x720 px = 809x380 points) as well as the tablet: it launches and renders, the picker's icon views work, a dialog body taller than the window scrolls so its Create / Close row stays inside the window (measured at the window's own scale: New Document's Create and Close fell below the lower edge, unreachable; at 50 % UI scale every dialog fits), and a tap on an icon tile's picture selects the tile (measured: it did nothing before) |
 | 2026-10-17 | minor | G18 new: the Android arm64 port (NativeActivity entry, app-private storage, in-app file browser, shared storage behind "All files access", vendored winit mouse, modifier stamping) verified on a Samsung Tab S11, Android 16; release signing and store packaging remain open |
 | 2026-10-14 | minor | G1: a PSD smart object's filter mask shows when the file opens (Photoshop stores the filtered pixels unmasked); export stores them that way too; Photoshop-oracle floor 185 → 188 of 258 |
