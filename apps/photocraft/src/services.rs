@@ -286,8 +286,8 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
 }
 
 /// Per-user settings directory: `PHOTOCRAFT_CONFIG_DIR`, else `<exe dir>/PhotoCraftData` in
-/// portable mode, else the platform convention. Everything the app persists lives under it; see
-/// [`crate::app_dirs`].
+/// portable mode, else the platform convention. Everything the app persists lives under it
+/// except, on Windows, crash-recovery autosaves; see [`crate::app_dirs`].
 pub fn config_dir() -> Option<PathBuf> {
     crate::app_dirs::config_dir()
 }
@@ -302,8 +302,10 @@ pub fn presets_dir() -> Option<PathBuf> {
     config_dir().map(|d| d.join("Presets"))
 }
 
+/// Crash-recovery autosaves: under the settings directory, except on Windows, where they stay
+/// out of the roaming profile (see [`crate::app_dirs::recovery_dir`]).
 fn recovery_dir() -> Option<PathBuf> {
-    config_dir().map(|d| d.join("Recovery"))
+    crate::app_dirs::recovery_dir()
 }
 
 /// Write `bytes` crash-safely (temp file beside the target, fsync, rename, directory fsync; see
@@ -533,6 +535,11 @@ pub fn native(automation: Option<photocraft_automation::AuthorizedWorkspace>) ->
         #[cfg(not(target_os = "android"))]
         file_dialog: Some(Box::new(show_file_dialog)),
         write: Some(Box::new(|path: &str, bytes: &[u8]| write_atomic(Path::new(path), bytes))),
+        file_stamp: Some(Box::new(|path: &str| {
+            // Follows a symlink, as Save writes through it to the file it points at.
+            let meta = std::fs::metadata(path).ok()?;
+            Some(photocraft_ui_egui::FileStamp { len: meta.len(), modified: meta.modified().ok() })
+        })),
         automation_read,
         automation_write,
         automation_open_pcraft,

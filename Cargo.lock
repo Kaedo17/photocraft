@@ -1229,6 +1229,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "craft-docpath"
+version = "0.1.0"
+source = "git+https://github.com/storytold/craft-libs?rev=82a24b006eefa036b43c09a67fb9a3fbd17ffe63#82a24b006eefa036b43c09a67fb9a3fbd17ffe63"
+
+[[package]]
 name = "craft-print"
 version = "0.1.0"
 source = "git+https://github.com/storytold/craft-libs?rev=3d37da389a3618ab9b76109da11416e9ca4ea719#3d37da389a3618ab9b76109da11416e9ca4ea719"
@@ -4635,7 +4640,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "android-activity",
  "arboard",
@@ -4669,6 +4674,7 @@ dependencies = [
  "rfd",
  "ron",
  "serde_json",
+ "tempfile",
  "winit",
  "winresource",
  "winsafe",
@@ -4680,7 +4686,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-affinity"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -4690,7 +4696,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-algo"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-color",
  "photocraft-geom",
@@ -4713,7 +4719,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-automation"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "base64 0.22.1",
  "cap-std",
@@ -4735,7 +4741,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-cli"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-automation",
  "photocraft-codecs",
@@ -4749,7 +4755,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-cms"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "moxcms",
  "rayon",
@@ -4757,7 +4763,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-codecs"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "exr",
  "flate2",
@@ -4778,7 +4784,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-color"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-cms",
  "serde",
@@ -4786,7 +4792,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-compose"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "criterion",
  "photocraft-color",
@@ -4801,7 +4807,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-doc"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-color",
  "photocraft-geom",
@@ -4812,7 +4818,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-engine"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "blake3",
  "craft-print",
@@ -4828,6 +4834,7 @@ dependencies = [
  "photocraft-format",
  "photocraft-geom",
  "photocraft-io",
+ "photocraft-ipp",
  "photocraft-ops",
  "photocraft-paint",
  "photocraft-plugins",
@@ -4847,7 +4854,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-format"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "blake3",
  "crc32fast",
@@ -4868,14 +4875,14 @@ dependencies = [
 
 [[package]]
 name = "photocraft-geom"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "photocraft-gpu"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "half",
  "log",
@@ -4892,16 +4899,17 @@ dependencies = [
 
 [[package]]
 name = "photocraft-heif"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "heic-rs",
 ]
 
 [[package]]
 name = "photocraft-io"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "blake3",
+ "craft-docpath",
  "crc32fast",
  "flate2",
  "photocraft-affinity",
@@ -4927,15 +4935,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "photocraft-ipp"
+version = "0.10.0"
+
+[[package]]
 name = "photocraft-ops"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-doc",
 ]
 
 [[package]]
 name = "photocraft-paint"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-color",
  "photocraft-geom",
@@ -4946,7 +4958,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-plugins"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-color",
  "photocraft-geom",
@@ -4961,7 +4973,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-psd"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "flate2",
  "photocraft-psd",
@@ -4972,7 +4984,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-raster"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-color",
  "photocraft-geom",
@@ -4982,7 +4994,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-raw"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "flate2",
  "image",
@@ -4997,7 +5009,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-tablet"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "block2 0.6.2",
  "objc2 0.6.4",
@@ -5009,7 +5021,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-testkit"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "memory-stats",
  "photocraft-color",
@@ -5020,7 +5032,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-text"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "flate2",
  "parley",
@@ -5034,7 +5046,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-ui-egui"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "base64 0.22.1",
  "craft-print",
@@ -5070,12 +5082,13 @@ dependencies = [
  "serde_json",
  "sys-locale",
  "toml",
+ "unicode-bidi",
  "winsafe",
 ]
 
 [[package]]
 name = "photocraft-vector"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "photocraft-color",
  "photocraft-doc",
@@ -5086,7 +5099,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-web"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "eframe",
  "egui",
@@ -5108,7 +5121,7 @@ dependencies = [
 
 [[package]]
 name = "photocraft-web-boot"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "flate2",
  "js-sys",
@@ -8759,7 +8772,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.9.0"
+version = "0.10.0"
 dependencies = [
  "serde",
  "serde_json",
