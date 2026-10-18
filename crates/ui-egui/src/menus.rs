@@ -1977,9 +1977,9 @@ mod tests {
         harness.get_by_label("Filter").click();
         harness.run_steps(3);
 
-        // No wheel, no touch event: a pointer drag down the open menu has to move its rows
-        // (egui's default waits for an Event::Touch that never arrives on Android, so the drag
-        // was swallowed whole and the rows below the fold were unreachable).
+        // No wheel and no touch event — this harness sends neither, and a host window has no
+        // touch state — but a pointer drag down the open menu must still move its rows: the drag
+        // is not left to egui's touch detection (widgets.rs `drag_source`).
         let item = harness.get_by_label_contains("Filter Gallery…");
         let before = item.rect().top();
         let mid = egui::pos2(450.0, before + 4.0);

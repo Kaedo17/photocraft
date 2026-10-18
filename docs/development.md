@@ -408,6 +408,13 @@ Android specifics:
 - **Input.** The vendored winit adds Android mouse and trackpad input
   ([`third_party/winit/README.md`](../third_party/winit/README.md)), and `stamp_android_modifiers`
   in `crates/ui-egui` supplies the keyboard modifiers winit never reports, so chords match.
+  Touch drags reach egui as real `Event::Touch`s: measured on the SM-X736B with 0.9.0 installed, a
+  finger drag already scrolled a dock panel and a menu taller than the window *before* the scroll
+  change in this branch, so `InputState::has_touch_screen` is satisfied on the tablet and egui's
+  `DragScroll::OnTouch` default was never what blocked it. Menus and panel bodies still force the
+  drag on (`widgets::drag_source`) so the gesture does not depend on that detection at all, and
+  `widgets::touch_scroll_target` widens the scroll bar's hit to 24 points on a touch screen (a
+  `ScrollStyle::thin` bar is ten points, four drawn while it floats).
 - **Wasm is unaffected:** the app crate is not in the `cargo xtask wasm` set, and its desktop
   dependencies (rfd, arboard, accesskit, X11/Wayland) are gated behind `cfg(not(target_os = "android"))`.
 - **No release signing or store packaging yet** ([G18](gaps.md#g18-android-release-signing-and-store-packaging)):
