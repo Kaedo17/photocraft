@@ -72,6 +72,25 @@ pub fn free_press(ctx: &egui::Context, canvas: egui::Rect) -> Option<egui::Pos2>
 /// scrolls.
 const DIALOG_CHROME: f32 = 150.0;
 
+/// Window height (points) below which a dialog's body scrolls instead of being drawn past the
+/// window's lower edge, where its fields and its OK / Cancel row cannot be reached at all: egui's
+/// `Modal` area is not constrained to the window, so nothing brings them back.
+///
+/// Chosen above the shortest window the desktop tests open (560 points), which keep drawing dialogs
+/// as before, and well inside a phone's landscape window: a phone in landscape is about 380 points
+/// tall (the TECNO KJ5's window measures 809x380 points at its own scale, 1618x760 at 50 % UI scale,
+/// where every dialog was measured to fit). A desktop window dragged down to the app's minimum
+/// inner size (`with_min_inner_size([760.0, 480.0])`, `apps/photocraft`) takes this path too, where
+/// scrolling the body is what keeps the buttons reachable.
+const SHORT_WINDOW: f32 = 500.0;
+
+/// Dialog bodies that scroll themselves already: the filter parameter lists (with their preview
+/// window under them) reserve and cap their own room, and a second, outer scroll area around them
+/// would only add a second bar.
+fn body_scrolls_itself(fields: &serde_json::Map<String, Value>) -> bool {
+    fields.contains_key("__filter") || crate::prefs_ui::is_preferences(fields)
+}
+
 /// Draw a dialog body that opens on its first number, selected, as Photoshop's value dialogs do:
 /// typing replaces it and Enter applies it (#1757). Once per dialog `id`, on the first laid-out
 /// frame.
@@ -276,105 +295,121 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
             crate::widgets::hairline(ui);
             ui.add_space(8.0);
             crate::field_tab::begin(ui.ctx());
-            match d.kind {
-                DialogKind::NewDocument => {
-                    if crate::new_doc_ui::body(app, ui, &mut fields) {
-                        outcome = Some(true);
-                    }
-                }
-                DialogKind::About if fields.get("systemInfo").and_then(Value::as_bool) == Some(true) => {
-                    let lines = crate::gpu_status::system_info_ui(app);
-                    for l in &lines {
-                        ui.add(egui::Label::new(egui::RichText::new(l).font(crate::theme::mono(12.0))).selectable(true));
-                    }
-                    ui.add_space(8.0);
-                    if crate::widgets::secondary_button(ui, tl!("Copy"), 84.0).clicked() {
-                        ui.ctx().copy_text(crate::gpu_status::system_info(app).join("\n"));
-                    }
-                }
-                DialogKind::About => {
-                    // Tabs About · Contributors · Models (craftrules standards/contributors.md). The
-                    // tab is a dialog field, so automation can switch it with `ui.dialog.set`.
-                    let tab = about_tab(&fields);
-                    let mut chosen = tab;
-                    ui.horizontal(|ui| {
-                        for (key, label) in [("about", tl!("About")), ("contributors", tl!("Contributors")), ("models", tl!("Models"))] {
-                            if crate::widgets::pill_tab(ui, label, tab == key).clicked() {
-                                chosen = key;
-                            }
+            // A dialog body taller than a short window scrolls instead of drawing past the
+            // window's lower edge — where its fields and its OK / Cancel row cannot be reached
+            // at all, because egui's `Modal` area is not constrained to the window — while the
+            // title and the button row stay where they are. The filter parameter lists already
+            // scroll themselves (`__filter`), and the preferences pages are resizable with their
+            // own scroll areas, so both take the plain path.
+            let window = ctx.content_rect().height();
+            let scroll_body = !web && !body_scrolls_itself(&fields) && window < SHORT_WINDOW;
+            let room = (window - DIALOG_CHROME).max(120.0);
+            let mut body = |ui: &mut egui::Ui| {
+                match d.kind {
+                    DialogKind::NewDocument => {
+                        if crate::new_doc_ui::body(app, ui, &mut fields) {
+                            outcome = Some(true);
                         }
-                    });
-                    if chosen != tab {
-                        fields.insert("tab".into(), json!(chosen));
                     }
-                    ui.add_space(8.0);
-                    about_tab_body(app, ui, chosen);
-                }
-                DialogKind::Command if crate::guide_layout_ui::owns(&fields) => outcome = crate::guide_layout_ui::body(app, ui, &mut fields, interactive),
-                DialogKind::Command if crate::brush_preset_dialog::owns(&fields) => {
-                    outcome = crate::brush_preset_dialog::body(app, ui, &mut fields, interactive)
-                }
-                DialogKind::Command if crate::fill_ui::owns(&fields) => crate::fill_ui::body(app, ui, &mut fields),
-                DialogKind::Command if crate::pattern_fill_ui::owns(&fields) => crate::pattern_fill_ui::body(app, ui, &mut fields),
-                DialogKind::Command if crate::stroke_ui::owns(&fields) => crate::stroke_ui::body(ui, &mut fields),
-                DialogKind::Command if crate::channel_options_ui::owns(&fields) => crate::channel_options_ui::body(ui, &mut fields),
-                DialogKind::Command if crate::channel_options_ui::owns_new_spot(&fields) => crate::channel_options_ui::new_spot_body(ui, &mut fields),
-                DialogKind::Command if crate::shape_dialog::owns(&fields) => crate::shape_dialog::body(app, ui, &mut fields),
-                DialogKind::Command if crate::delete_layer_prompt::owns(&fields) => crate::delete_layer_prompt::body(ui, &mut fields),
-                DialogKind::Command if crate::disk_change_prompt::owns(&fields) => crate::disk_change_prompt::body(ui, &fields),
-                DialogKind::Command if crate::actions::owns_insert_stop(&fields) => crate::actions::insert_stop_body(ui, &mut fields),
-                DialogKind::Command if crate::new_layer_ui::owns(&fields) => crate::new_layer_ui::body(ui, &mut fields),
-                DialogKind::Command if crate::mask_trash_prompt::owns(&fields) => crate::mask_trash_prompt::body(ui, &fields),
-                DialogKind::Command if crate::rasterize_prompt::owns(&fields) => crate::rasterize_prompt::body(ui, &fields),
-                DialogKind::Command if crate::duplicate_layer_ui::owns(&fields) => crate::duplicate_layer_ui::body(app, ui, &mut fields),
-                DialogKind::Command if crate::stack_dialog::owns(&fields) => crate::stack_dialog::body(app, ui, &mut fields, d.id),
-                DialogKind::Command if crate::tool_reset::owns(&fields) => crate::tool_reset::body(ui),
-                DialogKind::Command if crate::crop_presets::owns(&fields) => crate::crop_presets::body(app, ui, &mut fields),
-                DialogKind::Command if crate::variables_ui::owns(&fields) => crate::variables_ui::body(app, ui, &mut fields),
-                DialogKind::Command if crate::file_ui::owns(&fields) => crate::file_ui::body(app, ui, &mut fields),
-                DialogKind::Command if crate::color_picker_ui::owns(&fields) => {
-                    outcome = crate::color_picker_ui::body(ui, &mut fields);
-                    crate::color_picker_ui::take_add_swatch(app, &mut fields);
-                    if let Some(web) = fields.get("__webOnly").and_then(Value::as_bool) {
-                        app.ui.color_panel.web_only = web;
+                    DialogKind::About if fields.get("systemInfo").and_then(Value::as_bool) == Some(true) => {
+                        let lines = crate::gpu_status::system_info_ui(app);
+                        for l in &lines {
+                            ui.add(egui::Label::new(egui::RichText::new(l).font(crate::theme::mono(12.0))).selectable(true));
+                        }
+                        ui.add_space(8.0);
+                        if crate::widgets::secondary_button(ui, tl!("Copy"), 84.0).clicked() {
+                            ui.ctx().copy_text(crate::gpu_status::system_info(app).join("\n"));
+                        }
+                    }
+                    DialogKind::About => {
+                        // Tabs About · Contributors · Models (craftrules standards/contributors.md). The
+                        // tab is a dialog field, so automation can switch it with `ui.dialog.set`.
+                        let tab = about_tab(&fields);
+                        let mut chosen = tab;
+                        ui.horizontal(|ui| {
+                            for (key, label) in [("about", tl!("About")), ("contributors", tl!("Contributors")), ("models", tl!("Models"))] {
+                                if crate::widgets::pill_tab(ui, label, tab == key).clicked() {
+                                    chosen = key;
+                                }
+                            }
+                        });
+                        if chosen != tab {
+                            fields.insert("tab".into(), json!(chosen));
+                        }
+                        ui.add_space(8.0);
+                        about_tab_body(app, ui, chosen);
+                    }
+                    DialogKind::Command if crate::guide_layout_ui::owns(&fields) => outcome = crate::guide_layout_ui::body(app, ui, &mut fields, interactive),
+                    DialogKind::Command if crate::brush_preset_dialog::owns(&fields) => {
+                        outcome = crate::brush_preset_dialog::body(app, ui, &mut fields, interactive)
+                    }
+                    DialogKind::Command if crate::fill_ui::owns(&fields) => crate::fill_ui::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::pattern_fill_ui::owns(&fields) => crate::pattern_fill_ui::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::stroke_ui::owns(&fields) => crate::stroke_ui::body(ui, &mut fields),
+                    DialogKind::Command if crate::channel_options_ui::owns(&fields) => crate::channel_options_ui::body(ui, &mut fields),
+                    DialogKind::Command if crate::channel_options_ui::owns_new_spot(&fields) => crate::channel_options_ui::new_spot_body(ui, &mut fields),
+                    DialogKind::Command if crate::shape_dialog::owns(&fields) => crate::shape_dialog::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::delete_layer_prompt::owns(&fields) => crate::delete_layer_prompt::body(ui, &mut fields),
+                    DialogKind::Command if crate::disk_change_prompt::owns(&fields) => crate::disk_change_prompt::body(ui, &fields),
+                    DialogKind::Command if crate::actions::owns_insert_stop(&fields) => crate::actions::insert_stop_body(ui, &mut fields),
+                    DialogKind::Command if crate::new_layer_ui::owns(&fields) => crate::new_layer_ui::body(ui, &mut fields),
+                    DialogKind::Command if crate::mask_trash_prompt::owns(&fields) => crate::mask_trash_prompt::body(ui, &fields),
+                    DialogKind::Command if crate::rasterize_prompt::owns(&fields) => crate::rasterize_prompt::body(ui, &fields),
+                    DialogKind::Command if crate::duplicate_layer_ui::owns(&fields) => crate::duplicate_layer_ui::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::stack_dialog::owns(&fields) => crate::stack_dialog::body(app, ui, &mut fields, d.id),
+                    DialogKind::Command if crate::tool_reset::owns(&fields) => crate::tool_reset::body(ui),
+                    DialogKind::Command if crate::crop_presets::owns(&fields) => crate::crop_presets::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::variables_ui::owns(&fields) => crate::variables_ui::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::file_ui::owns(&fields) => crate::file_ui::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::color_picker_ui::owns(&fields) => {
+                        outcome = crate::color_picker_ui::body(ui, &mut fields);
+                        crate::color_picker_ui::take_add_swatch(app, &mut fields);
+                        if let Some(web) = fields.get("__webOnly").and_then(Value::as_bool) {
+                            app.ui.color_panel.web_only = web;
+                        }
+                    }
+                    DialogKind::Command if crate::color_range_ui::owns(&fields) => crate::color_range_ui::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::prefs_ui::owns(&fields) => crate::prefs_ui::body(app, ui, &mut fields),
+                    DialogKind::Command if fields.contains_key("__export") => crate::export_dialog::body(app, ui, &mut fields),
+                    // Image Size and Canvas Size open on Width, selected (#2329).
+                    DialogKind::Command if fields.contains_key("__sizing") => first_field_focused(ui, id, |ui| crate::sizing::body(ui, &mut fields)),
+                    DialogKind::Command if crate::adjust_dialog::owns(&fields) => crate::adjust_dialog::body(app, ui, &mut fields),
+                    DialogKind::Command if crate::blur_pins::owns(&fields) => crate::blur_pins::body(ui, &mut fields),
+                    DialogKind::Command if fields.contains_key("__filter") => {
+                        // Color Settings: the monitor profile in use can change while it is open.
+                        if fields.get("__command").and_then(Value::as_str) == Some("edit.colorSettings") {
+                            fields.insert("__note".into(), Value::String(crate::monitor_status::note(app)));
+                        }
+                        // Long parameter lists (Flame, Lighting Effects) scroll, so the title and the
+                        // OK / Cancel buttons stay inside a small window. The preview window below the
+                        // parameters reserves its own space (#3769).
+                        let room = (ctx.content_rect().height() - DIALOG_CHROME - crate::filter_preview_ui::reserved_height(&fields)).max(120.0);
+                        let body = |ui: &mut egui::Ui, fields: &mut serde_json::Map<String, Value>| {
+                            crate::widgets::panel_scroll().id_salt(id.with("body")).max_height(room).show(ui, |ui| crate::filter_dialog::body(ui, fields));
+                            // The in-dialog preview window sits under the scrolling parameters (#3769),
+                            // so it never shifts them.
+                            crate::filter_preview_ui::window(app, d.id, ui, fields);
+                        };
+                        // Select and Mask leaves the keyboard to its view keys (F, X, O, V…).
+                        if crate::select_mask_view::owns(&fields) {
+                            body(ui, &mut fields);
+                        } else {
+                            first_field_focused(ui, id, |ui| body(ui, &mut fields));
+                        }
+                    }
+                    DialogKind::Command if crate::new_guide_ui::owns(&fields) => crate::new_guide_ui::body(ui, &mut fields),
+                    DialogKind::Command if fields.contains_key("__form") => crate::view_cmds::form_body(ui, &mut fields),
+                    DialogKind::Command => {}
+                    DialogKind::LayerStyle => crate::layer_style::body(app, ui, &mut fields),
+                    DialogKind::Error => {
+                        ui.label(fields.get("message").and_then(Value::as_str).unwrap_or("Error"));
                     }
                 }
-                DialogKind::Command if crate::color_range_ui::owns(&fields) => crate::color_range_ui::body(app, ui, &mut fields),
-                DialogKind::Command if crate::prefs_ui::owns(&fields) => crate::prefs_ui::body(app, ui, &mut fields),
-                DialogKind::Command if fields.contains_key("__export") => crate::export_dialog::body(app, ui, &mut fields),
-                // Image Size and Canvas Size open on Width, selected (#2329).
-                DialogKind::Command if fields.contains_key("__sizing") => first_field_focused(ui, id, |ui| crate::sizing::body(ui, &mut fields)),
-                DialogKind::Command if crate::adjust_dialog::owns(&fields) => crate::adjust_dialog::body(app, ui, &mut fields),
-                DialogKind::Command if crate::blur_pins::owns(&fields) => crate::blur_pins::body(ui, &mut fields),
-                DialogKind::Command if fields.contains_key("__filter") => {
-                    // Color Settings: the monitor profile in use can change while it is open.
-                    if fields.get("__command").and_then(Value::as_str) == Some("edit.colorSettings") {
-                        fields.insert("__note".into(), Value::String(crate::monitor_status::note(app)));
-                    }
-                    // Long parameter lists (Flame, Lighting Effects) scroll, so the title and the
-                    // OK / Cancel buttons stay inside a small window. The preview window below the
-                    // parameters reserves its own space (#3769).
-                    let room = (ctx.content_rect().height() - DIALOG_CHROME - crate::filter_preview_ui::reserved_height(&fields)).max(120.0);
-                    let body = |ui: &mut egui::Ui, fields: &mut serde_json::Map<String, Value>| {
-                        crate::widgets::panel_scroll().id_salt(id.with("body")).max_height(room).show(ui, |ui| crate::filter_dialog::body(ui, fields));
-                        // The in-dialog preview window sits under the scrolling parameters (#3769),
-                        // so it never shifts them.
-                        crate::filter_preview_ui::window(app, d.id, ui, fields);
-                    };
-                    // Select and Mask leaves the keyboard to its view keys (F, X, O, V…).
-                    if crate::select_mask_view::owns(&fields) {
-                        body(ui, &mut fields);
-                    } else {
-                        first_field_focused(ui, id, |ui| body(ui, &mut fields));
-                    }
-                }
-                DialogKind::Command if crate::new_guide_ui::owns(&fields) => crate::new_guide_ui::body(ui, &mut fields),
-                DialogKind::Command if fields.contains_key("__form") => crate::view_cmds::form_body(ui, &mut fields),
-                DialogKind::Command => {}
-                DialogKind::LayerStyle => crate::layer_style::body(app, ui, &mut fields),
-                DialogKind::Error => {
-                    ui.label(fields.get("message").and_then(Value::as_str).unwrap_or("Error"));
-                }
+            };
+            if scroll_body {
+                let _ = crate::widgets::panel_scroll().id_salt(id.with("dialog-body")).max_height(room).show(ui, body);
+            } else {
+                body(ui);
             }
             crate::field_tab::end(ui.ctx(), tab);
             if crate::guide_layout_ui::owns(&fields) || crate::brush_preset_dialog::owns(&fields) {

@@ -414,11 +414,13 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
                                     let name: String = if is_dir { format!("{label}/") } else { label.clone() };
                                     let name: String = name.chars().take((width / 7.0) as usize).collect();
                                     // The tile: the file's decoded picture (or its type glyph
-                                    // until one decodes / when nothing does) above the name. The
-                                    // slot is allocated, never interactive; the name button under
-                                    // it is the whole tile's click target and its accessible label.
+                                    // until one decodes / when nothing does) above the name. Both
+                                    // halves take the tap, so the whole tile selects or opens:
+                                    // measured on the phone, a tap on the picture did nothing while
+                                    // the tile's highlight promised a selectable tile, and only the
+                                    // name button under it answered.
                                     let slot = width * 0.62;
-                                    let (slot_rect, _) = ui.allocate_exact_size(egui::vec2(width, slot), egui::Sense::hover());
+                                    let (slot_rect, slot_resp) = ui.allocate_exact_size(egui::vec2(width, slot), egui::Sense::click());
                                     let thumb = (!is_dir).then(|| crate::thumbs::get(ctx, path)).flatten();
                                     match &thumb {
                                         Some((tex, size)) => {
@@ -465,7 +467,7 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
                                             ui.style().visuals.selection.bg_fill,
                                         );
                                     }
-                                    if resp.clicked() {
+                                    if resp.clicked() || slot_resp.clicked() {
                                         if is_dir {
                                             enter = Some((*path).clone());
                                         } else {
@@ -961,5 +963,39 @@ mod ui_tests {
         let second = f.h.get_by_label_contains("basil.psd").rect();
         assert!((first.top() - second.top()).abs() < 0.5, "tiles of one row line up: {first:?} {second:?}");
         assert!(second.left() > first.left(), "the second tile is beside the first: {first:?} {second:?}");
+    }
+
+    /// Measured on the phone: in the icon view a tap on a tile's picture did nothing, though the
+    /// tile highlights like a target and its name under it answered; only the name button took the
+    /// tap. Both halves of the tile take it now.
+    #[test]
+    fn a_tap_on_a_tile_picture_selects_the_file() {
+        let out: Picked = Rc::default();
+        let slot = out.clone();
+        let mut f = fixture("tile-tap", move |app| {
+            app.session.execute("prefs.set", json!({"path": "workspace.pickerView", "value": "small"})).unwrap();
+            app.pick_file_bytes_filtered(&["psd"], move |_app, name, bytes| {
+                slot.borrow_mut().push((name, bytes));
+                Ok(json!("ok"))
+            })
+            .unwrap();
+        });
+        std::fs::write(f.base.join("Documents/Scene.psd"), b"pixels").unwrap();
+        f.h.run_steps(4);
+        // The picture sits directly above the name button, the smaller icon view's tile being
+        // 84 points wide with the picture taking 62 % of that.
+        let name = f.h.get_by_label_contains("Scene.psd").rect();
+        let gap = f.h.ctx.global_style().spacing.item_spacing.y;
+        let picture = egui::pos2(name.center().x, name.top() - gap - 84.0 * 0.62 * 0.5);
+        f.h.hover_at(picture);
+        f.h.run_steps(1);
+        f.h.drag_at(picture);
+        f.h.run_steps(1);
+        f.h.drop_at(picture);
+        f.h.run_steps(4);
+        // A single-file pick answers on the tap itself.
+        assert!(!f.h.state().android_file.is_open(), "the tap on the picture answered the pick");
+        let expected = f.base.join("Documents/Scene.psd").to_string_lossy().into_owned();
+        assert_eq!(*out.borrow(), vec![(expected, b"pixels".to_vec())]);
     }
 }

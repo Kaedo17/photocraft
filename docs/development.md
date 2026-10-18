@@ -415,11 +415,14 @@ Android specifics:
   `DragScroll::OnTouch` default was never what blocked it. Menus and panel bodies still force the
   drag on (`widgets::drag_source`) so the gesture does not depend on that detection at all, and
   `widgets::touch_scroll_target` widens the scroll bar's hit to 24 points on a touch screen (a
-  `ScrollStyle::thin` bar is ten points, four drawn while it floats). The drag stops at a dialog:
-  measured on the same tablet, a finger drag inside the in-app browser's grid leaves the listing
-  where it is, where the same gesture pans a panel or a menu. egui's `containers/area.rs` keeps
-  drag hit-tests on the area's own widget over its body, so the bar and the wheel are the way
-  through a long listing in a dialog.
+  `ScrollStyle::thin` bar is ten points, four drawn while it floats). The port was exercised on a
+  phone too (TECNO KJ5, Android 13, landscape window 1532x720 px = 809x380 points): there a finger
+  drag scrolls a scrolling dialog body and the widened bar band pans it, while the Layers list does
+  not move — its rows are `Sense::click_and_drag` for reordering, so the row owns the drag. The drag
+  stops at a dialog that scrolls nothing itself: measured on the tablet, a finger drag inside the
+  in-app browser's grid leaves the listing where it is, where the same gesture pans a panel or a
+  menu. egui's `containers/area.rs` keeps drag hit-tests on the area's own widget over its body, so
+  the bar and the wheel are the way through a long listing in a dialog.
 - **Wasm is unaffected:** the app crate is not in the `cargo xtask wasm` set, and its desktop
   dependencies (rfd, arboard, accesskit, X11/Wayland) are gated behind `cfg(not(target_os = "android"))`.
 - **No release signing or store packaging yet** ([G18](gaps.md#g18-android-release-signing-and-store-packaging)):

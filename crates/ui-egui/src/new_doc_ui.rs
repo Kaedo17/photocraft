@@ -1558,5 +1558,31 @@ mod tests {
                 );
             }
         }
+
+        /// A phone in landscape is about 809x380 points (the TECNO KJ5's window measures 1532x720
+        /// px = 809x380 points at the window's own scale): there the dialog's body scrolls, so its
+        /// title and its Create / Cancel row stay inside the window. Measured on the device before
+        /// the body scrolled: the dialog ran past the window's lower edge, with Background Contents
+        /// cut and Create and Cancel below it, unreachable.
+        #[test]
+        fn a_phone_shaped_window_scrolls_the_body_and_keeps_create_inside() {
+            let size = egui::vec2(809.0, 380.0);
+            let app = PhotocraftApp::new(photocraft_engine::Session::new(), crate::Services::default());
+            let mut h = Harness::builder().with_size(size).with_step_dt(1.0 / 60.0).build_ui_state(|ui, app| crate::dialogs::show(app, ui.ctx()), app);
+            PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::ALL[0]);
+            h.state_mut().ui.open_dialog(DialogKind::NewDocument, UiState::new_document_fields());
+            h.run_steps(3);
+            for label in ["New Document", "Create", "Close"] {
+                let found: Vec<egui::Rect> = h.query_all_by_label(label).map(|n| n.rect()).collect();
+                assert!(!found.is_empty(), "the {label:?} widget is missing");
+                for r in found {
+                    assert!(r.top() >= 0.0 && r.bottom() <= size.y, "{label} at {r:?} is outside the {size:?} window");
+                }
+            }
+            // And Create is genuinely usable where it sits: it makes the default 1920 x 1080 document.
+            h.get_by_label("Create").click();
+            h.run_steps(3);
+            assert_eq!(created(&h), (1920, 1080, 72.0));
+        }
     }
 }

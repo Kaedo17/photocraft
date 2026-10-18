@@ -270,8 +270,10 @@ what an agent can't finish alone.
 ### G18. Android: release signing and store packaging
 - **Missing:** the arm64 APK launches, renders, saves and browses, and once the user grants
   "All files access" it reaches shared storage too — a file can be picked from `Download/` and a
-  save can land in a shared folder (verified on a Samsung Tab S11, Android 16; see the
-  [Android build](development.md#android-build)). What it still lacks: the APK is signed with a
+  save can land in a shared folder (verified on a Samsung Tab S11, Android 16, and on a phone at
+  720x1612, where the picker's icon views, a dialog body taller than the window scrolling and the
+  whole-tile tap were measured; see the [Android build](development.md#android-build)). What it
+  still lacks: the APK is signed with a
   local debug keystore for `adb install` only — no release signing
   (`[package.metadata.android.signing.release]`, a keystore + password the packaging secrets have
   to hold, as `packaging/` does for the desktop installers) and no store packaging (Google Play /
@@ -284,6 +286,7 @@ what an agent can't finish alone.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-18 | minor | G18: the port verified on a 720x1612 phone (Android 13, landscape window 1532x720 px = 809x380 points) as well as the tablet: it launches and renders, the picker's icon views work, a dialog body taller than the window scrolls so its Create / Close row stays inside the window (measured at the window's own scale: New Document's Create and Close fell below the lower edge, unreachable; at 50 % UI scale every dialog fits), and a tap on an icon tile's picture selects the tile (measured: it did nothing before) |
 | 2026-10-17 | minor | G18 new: the Android arm64 port (NativeActivity entry, app-private storage, in-app file browser, shared storage behind "All files access", vendored winit mouse, modifier stamping) verified on a Samsung Tab S11, Android 16; release signing and store packaging remain open |
 | 2026-10-14 | minor | G1: a PSD smart object's filter mask shows when the file opens (Photoshop stores the filtered pixels unmasked); export stores them that way too; Photoshop-oracle floor 185 → 188 of 258 |
 | 2026-10-13 | minor | G14: D90 image area measured (4288 × 2848 at (10, 10)); gap remains open |
