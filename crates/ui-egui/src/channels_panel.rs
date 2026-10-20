@@ -125,7 +125,9 @@ pub fn show(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             };
             let row_h = if t.pro { 36.0 } else { 40.0 };
             let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), row_h), Sense::click_and_drag());
-            if resp.drag_started() {
+            // A finger that moves before the hold pans the list instead of dragging the row.
+            let scrolling = crate::widgets::touch_row(ui, &resp) == crate::widgets::TouchRow::Scroll;
+            if resp.drag_started() && !scrolling {
                 ctx.data_mut(|d| d.insert_temp(drag_id(), (row, name.clone())));
             }
             let painter = ui.painter_at(rect.expand(1.0));

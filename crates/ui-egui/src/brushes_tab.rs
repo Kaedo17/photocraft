@@ -298,9 +298,23 @@ fn second_half(ui: &egui::Ui, r: egui::Rect, grid: bool) -> bool {
 }
 
 /// Drag, drop and context menu of one preset cell or row.
-fn preset_interactions(ui: &egui::Ui, resp: &egui::Response, r: egui::Rect, p: &BrushPreset, presets: &[BrushPreset], grid: bool, acts: &mut Vec<Action>) {
+/// `scrolling` is set while a finger pans the list: the preset must not be picked up then.
+#[allow(clippy::too_many_arguments)]
+fn preset_interactions(
+    ui: &egui::Ui,
+    resp: &egui::Response,
+    r: egui::Rect,
+    p: &BrushPreset,
+    presets: &[BrushPreset],
+    grid: bool,
+    acts: &mut Vec<Action>,
+    scrolling: bool,
+) {
     let t = Tokens::get(ui.ctx());
-    resp.dnd_set_drag_payload(BrushDrag::Preset(p.name.clone()));
+    // A finger panning the list must not pick the preset up.
+    if !scrolling {
+        resp.dnd_set_drag_payload(BrushDrag::Preset(p.name.clone()));
+    }
     if let Some(d) = resp.dnd_hover_payload::<BrushDrag>()
         && matches!(&*d, BrushDrag::Preset(n) if *n != p.name)
     {
@@ -336,6 +350,8 @@ const STROKE_NAME_ROOM: f32 = 140.0;
 fn list_row(ui: &mut egui::Ui, p: &BrushPreset, current: bool, presets: &[BrushPreset], indent: f32, acts: &mut Vec<Action>) {
     let t = Tokens::get(ui.ctx());
     let (full, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 44.0), Sense::click_and_drag());
+    // A finger that moves before the hold scrolls the list instead of picking the row up.
+    let scrolling = widgets::touch_row(ui, &resp) == widgets::TouchRow::Scroll;
     // Rows inside nested folders are indented; the whole width stays the drop target.
     let r = egui::Rect::from_min_max(full.min + vec2(indent.min(full.width() / 2.0), 0.0), full.max);
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, current, &p.name));
@@ -366,7 +382,7 @@ fn list_row(ui: &mut egui::Ui, p: &BrushPreset, current: bool, presets: &[BrushP
     let sr = egui::Rect::from_min_size(pos2(cell.right() + 8.0, r.top() + 4.0), vec2(w, 36.0));
     ui.painter().image(stroke.id(), sr, full_uv(), Color32::WHITE);
     crate::layer_row_ui::label(ui.painter(), sr.right() + 12.0, r.center().y, r.right() - 4.0, &p.name, egui::FontId::proportional(12.0), t.text_dim);
-    preset_interactions(ui, &resp, r, p, presets, false, acts);
+    preset_interactions(ui, &resp, r, p, presets, false, acts, scrolling);
 }
 
 /// The gap between grid cells, across and down.
@@ -392,6 +408,7 @@ pub(crate) fn grid_columns(width: f32, cell: f32, indent: f32, gap: f32) -> (f32
 fn grid_cell(ui: &mut egui::Ui, p: &BrushPreset, current: bool, presets: &[BrushPreset], cell: f32, acts: &mut Vec<Action>) {
     let t = Tokens::get(ui.ctx());
     let (r, resp) = ui.allocate_exact_size(vec2(cell, cell + 6.0), Sense::click_and_drag());
+    let scrolling = widgets::touch_row(ui, &resp) == widgets::TouchRow::Scroll;
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, current, &p.name));
     if !ui.is_rect_visible(r) {
         return;
@@ -415,7 +432,7 @@ fn grid_cell(ui: &mut egui::Ui, p: &BrushPreset, current: bool, presets: &[Brush
         t.text_dim,
     );
     let resp = resp.on_hover_text(&p.name);
-    preset_interactions(ui, &resp, r, p, presets, true, acts);
+    preset_interactions(ui, &resp, r, p, presets, true, acts, scrolling);
 }
 
 /// Padding, tip cell width and name row height, at scale 1; the footer slider multiplies them
@@ -540,6 +557,7 @@ fn preset_card(
         0.0
     };
     let (full, resp) = ui.allocate_exact_size(vec2(width, pad_y * 2.0 + top_h + name_h), Sense::click_and_drag());
+    let scrolling = widgets::touch_row(ui, &resp) == widgets::TouchRow::Scroll;
     resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::Button, true, current, &p.name));
     if !ui.is_rect_visible(full) {
         return;
@@ -614,7 +632,7 @@ fn preset_card(
     let resp = resp.on_hover_text(&p.name);
     // A tip-only card's grid drops between columns, like the Brushes tab's: the rest drop between
     // rows (there is a row under the tip there).
-    preset_interactions(ui, &resp, card, p, presets, tip_only, acts);
+    preset_interactions(ui, &resp, card, p, presets, tip_only, acts, scrolling);
 }
 
 /// Indent of one nested folder level.
@@ -659,6 +677,7 @@ pub fn folder_drop(src_group: &str, src_folder: &[String], group: &str, folder: 
 fn group_header(ui: &mut egui::Ui, label: &str, key: &str, folder: &[String], open: bool, count: usize, acts: &mut Vec<Action>) {
     let t = Tokens::get(ui.ctx());
     let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 24.0), Sense::click_and_drag());
+    let scrolling = widgets::touch_row(ui, &resp) == widgets::TouchRow::Scroll;
     if resp.hovered() {
         ui.painter().rect_filled(r, t.radius_sm, t.hover);
     }
@@ -686,7 +705,9 @@ fn group_header(ui: &mut egui::Ui, label: &str, key: &str, folder: &[String], op
         [] => BrushDrag::Group(key.to_string()),
         f => BrushDrag::Folder { group: key.to_string(), folder: f.to_vec() },
     };
-    resp.dnd_set_drag_payload(me);
+    if !scrolling {
+        resp.dnd_set_drag_payload(me);
+    }
     // The upper third of the header places a dragged folder before this one; the rest drops it in.
     let edge = ui.ctx().pointer_interact_pos().is_some_and(|p| p.y < r.top() + r.height() / 3.0);
     let folder_action = |d: &BrushDrag| match d {

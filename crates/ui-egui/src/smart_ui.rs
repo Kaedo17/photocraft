@@ -85,7 +85,9 @@ pub fn filter_rows(app: &mut PhotocraftApp, ui: &mut egui::Ui, l: &Layer, depth:
     let rows = std::iter::once(None).chain((0..sm.smart_filters.len()).rev().map(Some));
     for index in rows {
         let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), Sense::click_and_drag());
-        if resp.drag_started() {
+        // A finger that moves before the hold pans the list instead of dragging the row.
+        let scrolling = crate::widgets::touch_row(ui, &resp) == crate::widgets::TouchRow::Scroll;
+        if resp.drag_started() && !scrolling {
             ui.ctx().data_mut(|d| d.insert_temp::<FilterDrag>(drag_key(), (l.id.0, index)));
         }
         if let Some((to, action)) = reorder_drop(ui, l, sm.smart_filters.len(), index, rect) {

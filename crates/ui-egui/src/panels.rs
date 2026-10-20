@@ -132,9 +132,12 @@ pub fn toolbar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 + if double { bx } else { bx * 2.0 + 3.0 }
                 + 6.0;
             // As tall as the tools, so the colour chips sit right under them (Photoshop); a column
-            // taller than the window scrolls and keeps the chips at the bottom.
+            // taller than the window scrolls and keeps the chips at the bottom. No scroll bar: on
+            // an icon rail it would eat a button's width and a fingertip can pan the rail instead
+            // (the wheel and drag-to-scroll still work, and so does a keyboard scroll).
             crate::widgets::panel_scroll()
                 .id_salt("toolbar-columns")
+                .scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::AlwaysHidden)
                 .auto_shrink([false, true])
                 .max_height((ui.available_height() - footer).max(0.0))
                 .min_scrolled_height(0.0)
@@ -187,7 +190,10 @@ pub fn toolbar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                                     {
                                         ui.ctx().request_repaint_after(std::time::Duration::from_secs_f64(0.35 - seconds));
                                     }
-                                    let long_press = held_for.is_some_and(|seconds| seconds >= 0.35);
+                                    // A finger that is panning the rail (the press became a drag) must
+                                    // not open the flyout mid-scroll: a 0.35 s press that moved is a
+                                    // scroll, not a long press. A still hold still opens it.
+                                    let long_press = held_for.is_some_and(|seconds| seconds >= 0.35) && !ui.input(|i| i.pointer.is_decidedly_dragging());
                                     // Clicking the button of its open flyout again, with either button, closes
                                     // it (#4932); the release that ends the long press that opened it doesn't.
                                     let open_here = ui.data(|d| d.get_temp::<(egui::Id, Rect)>(flyout_id)).is_some_and(|(k, _)| k == key);
@@ -2938,11 +2944,13 @@ struct EyeSweep {
 }
 
 /// Starts an eye-column sweep from `eye`, or applies a running one to the row `row` of `l`.
-fn eye_sweep(ctx: &egui::Context, l: &Layer, row: Rect, eye: &egui::Response, actions: &mut Vec<(String, Value)>) {
+/// `allow_start` is false while the finger is panning the list (or sitting under its long-press
+/// menu): then the eye must not toggle visibility.
+fn eye_sweep(ctx: &egui::Context, l: &Layer, row: Rect, eye: &egui::Response, actions: &mut Vec<(String, Value)>, allow_start: bool) {
     let id = egui::Id::new("layer-eye-sweep");
     let set =
         |visible: bool, key: u64| ("layer.setProps".to_string(), json!({"layer": l.id.0, "visible": visible, "coalesce": format!("layer-eye-sweep:{key}")}));
-    if eye.drag_started() {
+    if eye.drag_started() && allow_start {
         let sweep = EyeSweep { visible: !l.visible, key: ctx.cumulative_pass_nr(), swept: vec![l.id.0] };
         actions.push(set(sweep.visible, sweep.key));
         ctx.data_mut(|d| d.insert_temp(id, sweep));
@@ -2991,16 +2999,20 @@ fn layer_row(
     // Photoshop's default (medium) thumbnails: 32 pt rows.
     let row_h = if t.pro { 32.0 } else { 46.0 };
     let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), row_h), Sense::click_and_drag());
+    // A finger that moves before the hold is scrolling the list, not dragging the row: this row
+    // senses drags, so egui hands it the gesture the scroll area would otherwise pan with.
+    let touch = widgets::touch_row(ui, &resp);
+    let scrolling = touch == widgets::TouchRow::Scroll;
     // A drag from a mask's thumbnail drags that mask, not the layer (#3113, #3119).
-    let mask_drag = starts_mask_drag(ctx, l, &resp);
+    let mask_drag = if scrolling { None } else { starts_mask_drag(ctx, l, &resp) };
     if let Some(kind) = mask_drag {
         ctx.data_mut(|d| d.insert_temp::<MaskDrag>(mask_drag_key(), (l.id.0, kind)));
     }
     let mask_drag = mask_drag.is_some();
-    layer_drag_and_drop(app, ctx, ui, l, rect, &resp, actions);
+    layer_drag_and_drop(app, ctx, ui, l, rect, &resp, actions, scrolling);
     fx_drop(ctx, ui, l, rect, actions);
     crate::smart_ui::drop_on_row(ctx, ui, l, rect, actions);
-    if resp.drag_started() && !mask_drag {
+    if resp.drag_started() && !mask_drag && !scrolling {
         crate::layer_transfer::begin_from_panel(app, ctx, l.id);
     }
     // Rows are painted: name them for screen readers and UI tests.
@@ -3049,8 +3061,8 @@ fn layer_row(
         // Centre the drawing in the column while preserving the visibility hit area.
         icons::paint(ui, eye_cell, "eye", 15.0, t.layer_label_icon(l.label));
     }
-    eye_sweep(ctx, l, rect, &eye_resp, actions);
-    if eye_resp.clicked() {
+    eye_sweep(ctx, l, rect, &eye_resp, actions, matches!(touch, widgets::TouchRow::None | widgets::TouchRow::Grab));
+    if eye_resp.clicked() && !scrolling {
         // ⌥-click shows only this layer; ⌥-click it again to restore the others.
         if ui.input(|i| i.modifiers.alt) {
             actions.push(("layer.showOnly".into(), json!({"layer": l.id.0})));
@@ -3102,8 +3114,10 @@ fn layer_row(
     let fx_open = app.session.active().is_none_or(|d| !d.fx_collapsed.contains(&l.id));
     let (name_right, indicators, fx_toggled) = crate::layer_row_ui::indicators(ui, &painter, rect, x, l, fx_open, actions);
     // Dragging the fx badge drags all the layer's effects, not the layer (Photoshop). Like the eye,
-    // it takes the drag from the row; clicks still reach the row.
+    // it takes the drag from the row; clicks still reach the row. A finger panning the list (or a
+    // hold under the open menu) must not start it.
     if let Some(&(_, badge)) = indicators.iter().find(|(k, _)| *k == crate::layer_row_ui::Indicator::Fx)
+        && matches!(touch, widgets::TouchRow::None | widgets::TouchRow::Grab)
         && ui.interact(badge, ui.id().with(("fx-badge", l.id.0)), Sense::drag()).drag_started()
     {
         start_fx_drag(ctx, l.id, None);
@@ -3368,8 +3382,9 @@ fn history(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             // Past states can be dragged onto the trash; the oldest one can't be deleted.
             let sense = if is_redo || i == 0 { Sense::click() } else { Sense::click_and_drag() };
             let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 24.0), sense);
+            let scrolling = widgets::touch_row(ui, &resp) == widgets::TouchRow::Scroll;
             resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, selected, &e));
-            if resp.drag_started() {
+            if resp.drag_started() && !scrolling {
                 ui.ctx().data_mut(|d| d.insert_temp(history_drag_key(), HistoryDrag::State(i)));
             }
             if selected {
@@ -3531,8 +3546,9 @@ fn snapshot_rows(app: &mut PhotocraftApp, ui: &mut egui::Ui, selected: Option<u6
     for snap in &snaps {
         let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 38.0), Sense::click_and_drag());
         let is_selected = selected == Some(snap.id);
+        let scrolling = widgets::touch_row(ui, &resp) == widgets::TouchRow::Scroll;
         resp.widget_info(|| egui::WidgetInfo::selected(egui::WidgetType::SelectableLabel, true, is_selected, &snap.name));
-        if resp.drag_started() {
+        if resp.drag_started() && !scrolling {
             ctx.data_mut(|d| d.insert_temp(history_drag_key(), HistoryDrag::Snapshot(snap.id)));
         }
         if is_selected {
@@ -4172,6 +4188,8 @@ fn background_drop_refused(doc: &photocraft_doc::Document, payload: &Value, targ
 /// Drag a layer row to reorder: drop above, below, or inside an existing group. With ⌥ held on
 /// release the layers stay put and copies land there instead (Photoshop).
 /// Multi-layer moves are atomic (one undo step), using the engine's stable document order.
+/// `scrolling` is set while a finger pans the list: the row must not begin a reorder then.
+#[allow(clippy::too_many_arguments)]
 fn layer_drag_and_drop(
     app: &PhotocraftApp,
     ctx: &egui::Context,
@@ -4180,12 +4198,13 @@ fn layer_drag_and_drop(
     rect: Rect,
     resp: &egui::Response,
     actions: &mut Vec<(String, Value)>,
+    scrolling: bool,
 ) {
     let t = Tokens::get(ctx);
     let key = egui::Id::new("layer-drag");
     // A drag from the mask thumbnail (`starts_mask_drag`) moves the mask, not the layer.
     let mask_drag = ctx.data(|d| d.get_temp::<MaskDrag>(mask_drag_key())).is_some_and(|(id, _)| id == l.id.0);
-    if resp.drag_started() && !mask_drag {
+    if resp.drag_started() && !mask_drag && !scrolling {
         ctx.data_mut(|d| d.insert_temp(key, l.id.0));
     }
     let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(key)) else { return };
@@ -4389,7 +4408,8 @@ fn effect_rows(app: &mut PhotocraftApp, ui: &mut egui::Ui, l: &Layer, depth: usi
     for (i, (name, on, kind)) in rows.into_iter().enumerate() {
         let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), Sense::click_and_drag());
         // Drag the row onto another layer to move its effects there, ⌥-drag to copy them.
-        if resp.drag_started() {
+        let scrolling = widgets::touch_row(ui, &resp) == widgets::TouchRow::Scroll;
+        if resp.drag_started() && !scrolling {
             start_fx_drag(ui.ctx(), l.id, i.checked_sub(1));
         }
         if !ui.is_rect_visible(rect) {

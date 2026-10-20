@@ -67,13 +67,22 @@ fn move_drag(app: &PhotocraftApp) -> Option<[f64; 2]> {
     plain.then_some(d.start)
 }
 
+/// Where the pointer is, for a drop. On the touch-release frame egui-winit sends a `PointerGone`,
+/// which clears `latest_pos` before the UI runs, so a finger's drop asked `latest_pos` and found
+/// nothing: the layers went nowhere. The interacting pointer keeps the position it was released
+/// at through that frame, so it comes first, and the hover/latest positions are the fallbacks for
+/// the frames where no button is down.
+fn drop_pos(ctx: &egui::Context) -> Option<egui::Pos2> {
+    ctx.input(|i| i.pointer.interact_pos().or_else(|| i.pointer.hover_pos()).or(i.pointer.latest_pos()))
+}
+
 /// The pointer, while layers are dragged (or a Move drag could become a transfer): tabs only
 /// hit-test it then.
 pub fn pointer_if_armed(app: &PhotocraftApp, ctx: &egui::Context) -> Option<egui::Pos2> {
     if get(ctx).is_none() && move_drag(app).is_none() {
         return None;
     }
-    ctx.input(|i| i.pointer.latest_pos())
+    drop_pos(ctx)
 }
 
 /// The pointer is over document tab `index` while layers are dragged: a Move drag becomes a
@@ -110,7 +119,7 @@ pub fn over_tab(app: &mut PhotocraftApp, ctx: &egui::Context, index: usize) {
 /// layers there; while the button is held a ghost follows the pointer.
 pub fn finish(app: &mut PhotocraftApp, ctx: &egui::Context) {
     let Some(t) = get(ctx) else { return };
-    let (pos, released, down) = ctx.input(|i| (i.pointer.latest_pos(), i.pointer.any_released(), i.pointer.primary_down()));
+    let (pos, released, down) = (drop_pos(ctx), ctx.input(|i| i.pointer.any_released()), ctx.input(|i| i.pointer.primary_down()));
     let target = pos.and_then(|p| target_at(app, p));
     if !released {
         if !down {

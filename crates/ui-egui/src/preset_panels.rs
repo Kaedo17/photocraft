@@ -407,6 +407,8 @@ pub(crate) fn browser(
                 let Some(g) = groups.get(gi) else { continue };
                 let open = group_open(st, panel, gi, &g.name);
                 let (hr, hresp) = ui.allocate_exact_size(vec2(ui.available_width(), 22.0), Sense::click_and_drag());
+                // A finger that moves before the hold pans the list instead of dragging the row.
+                let scrolling = crate::widgets::touch_row(ui, &hresp) == crate::widgets::TouchRow::Scroll;
                 if hresp.hovered() || hresp.dragged() {
                     ui.painter().rect_filled(hr, 2.0, t.hover.gamma_multiply(0.5));
                 }
@@ -431,13 +433,15 @@ pub(crate) fn browser(
                         ui.close();
                     }
                 });
-                if hresp.dragged()
+                if !scrolling
+                    && hresp.dragged()
                     && let Some(p) = ui.ctx().pointer_interact_pos()
                 {
                     drag = Some((gi, p));
                     ui.ctx().set_cursor_icon(egui::CursorIcon::Grabbing);
                 }
-                if hresp.drag_stopped()
+                if !scrolling
+                    && hresp.drag_stopped()
                     && let Some(p) = ui.ctx().pointer_interact_pos()
                 {
                     released = Some((gi, p));
@@ -461,6 +465,7 @@ pub(crate) fn browser(
                     let (cx, cy) = ((ii % cols) as f32, (ii / cols) as f32);
                     let r = Rect::from_min_size(area.min + vec2(pad + cx * (cell.x + gap), cy * (cell.y + gap)), cell);
                     let resp = ui.interact(r, ui.id().with((panel, gi, ii)), Sense::click_and_drag());
+                    let scrolling = crate::widgets::touch_row(ui, &resp) == crate::widgets::TouchRow::Scroll;
                     resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &it.name));
                     let is_sel = selected.as_deref() == Some(&it.key);
                     if list {
@@ -495,7 +500,8 @@ pub(crate) fn browser(
                     } else if resp.clicked() {
                         ev.push(Ev::Select(it.key.clone()));
                     }
-                    if resp.dragged()
+                    if !scrolling
+                        && resp.dragged()
                         && let Some(pp) = ui.ctx().pointer_interact_pos()
                     {
                         // A ghost of the swatch follows the pointer.
@@ -505,7 +511,8 @@ pub(crate) fn browser(
                         lp.rect_stroke(gr, 3.0, Stroke::new(1.0, t.accent), egui::StrokeKind::Outside);
                         lp.text(gr.center(), Align2::CENTER_CENTER, "+", FontId::proportional(16.0), t.accent);
                     }
-                    if resp.drag_stopped()
+                    if !scrolling
+                        && resp.drag_stopped()
                         && let Some(pp) = ui.ctx().pointer_interact_pos()
                         && !r.contains(pp)
                     {

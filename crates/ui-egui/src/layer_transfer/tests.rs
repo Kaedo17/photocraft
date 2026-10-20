@@ -130,3 +130,27 @@ fn dropping_back_on_the_source_copies_nothing() {
     assert_eq!((docs[0].doc.layers.len(), docs[1].doc.layers.len()), (2, 1));
     assert_eq!(h.state().session.active_index(), Some(0));
 }
+
+/// A finger's lift must keep the drop position: egui-winit sends the touch's `End` together with a
+/// `PointerGone`, which clears `latest_pos` before the UI runs, so asking `latest_pos` on the
+/// release frame found nothing and the dragged layers went nowhere. `drop_pos` asks the interacting
+/// pointer first, which egui keeps through exactly that frame.
+#[test]
+fn a_touch_release_keeps_the_drop_position() {
+    let ctx = egui::Context::default();
+    let at = egui::pos2(120.0, 150.0);
+    let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(300.0, 200.0));
+    let frame = |events: Vec<egui::Event>| {
+        let input = egui::RawInput { screen_rect: Some(screen), events, ..Default::default() };
+        let mut out = ctx.run_ui(input, |_| {});
+        out.textures_delta.clear();
+    };
+    let touch = |phase, pos| egui::Event::Touch { device_id: egui::TouchDeviceId(1), id: egui::TouchId(1), phase, pos, force: Some(0.5) };
+    let button = |pos, pressed| egui::Event::PointerButton { pos, button: PointerButton::Primary, pressed, modifiers: Modifiers::NONE };
+    frame(vec![]);
+    frame(vec![touch(egui::TouchPhase::Start, at), egui::Event::PointerMoved(at), button(at, true)]);
+    frame(vec![touch(egui::TouchPhase::Move, at), egui::Event::PointerMoved(at)]);
+    frame(vec![touch(egui::TouchPhase::End, at), button(at, false), egui::Event::PointerGone]);
+    assert_eq!(super::drop_pos(&ctx), Some(at), "the release frame keeps the drop position");
+    assert_eq!(ctx.input(|i| i.pointer.latest_pos()), None, "which is exactly where `latest_pos` alone failed");
+}
