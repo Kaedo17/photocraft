@@ -1941,6 +1941,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "exacl"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8de9e551ced9d700a31dacb8b168129640240fcd7a279a3fa4d59608b84ebcae"
+dependencies = [
+ "bitflags 2.13.2",
+ "log",
+ "scopeguard",
+ "uuid",
+]
+
+[[package]]
 name = "exr"
 version = "1.74.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4732,6 +4744,7 @@ dependencies = [
  "photocraft-geom",
  "photocraft-io",
  "rmcp",
+ "rustix 1.1.5",
  "schemars",
  "serde",
  "serde_json",
@@ -4845,6 +4858,7 @@ dependencies = [
  "photocraft-vector",
  "rayon",
  "roxmltree",
+ "same-file",
  "serde",
  "serde_json",
  "tempfile",
@@ -4858,6 +4872,7 @@ version = "0.10.0"
 dependencies = [
  "blake3",
  "crc32fast",
+ "exacl",
  "flate2",
  "libc",
  "photocraft-codecs",
@@ -4871,6 +4886,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+ "winsafe",
 ]
 
 [[package]]
@@ -4989,6 +5005,7 @@ dependencies = [
  "photocraft-color",
  "photocraft-geom",
  "proptest",
+ "rayon",
  "serde",
 ]
 
@@ -5041,6 +5058,7 @@ dependencies = [
  "photocraft-geom",
  "photocraft-psd",
  "photocraft-raster",
+ "rayon",
  "skrifa",
 ]
 

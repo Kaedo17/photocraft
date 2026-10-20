@@ -547,6 +547,7 @@ fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, id: &str) {
     if group.scrolls_itself(tab) {
         crate::panels::dock_body(app, ui, *group, tab);
     } else {
+        crate::panels::offer_color_field_fill(ui, pro, *group, tab);
         crate::widgets::panel_scroll()
             .id_salt(("shared-panel-body", id))
             .auto_shrink([false, false])

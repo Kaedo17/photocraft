@@ -408,6 +408,8 @@ pub type EncodePngFn = Box<dyn Fn(u32, u32, &[u8]) -> Result<Vec<u8>, String>>;
 pub type ClipboardSetFn = Box<dyn FnMut(u32, u32, &[u8]) -> Result<(), String>>;
 /// Read an RGBA8 image from the OS clipboard.
 pub type ClipboardGetFn = Box<dyn FnMut() -> Option<(u32, u32, Vec<u8>)>>;
+/// Whether the last clipboard read found no way to reach the OS clipboard at all.
+pub type ClipboardUnreadableFn = Box<dyn Fn() -> bool>;
 /// Shared queue of (file name, bytes) delivered asynchronously.
 pub type Inbox = std::sync::Arc<std::sync::Mutex<Vec<(String, Vec<u8>)>>>;
 /// Read the saved preferences text (`None` when there is none yet).
@@ -517,6 +519,9 @@ pub struct Services {
     /// OS clipboard images: copies go out, screenshots and images from other apps come in.
     pub clipboard_set_image: Option<ClipboardSetFn>,
     pub clipboard_get_image: Option<ClipboardGetFn>,
+    /// True when the last `clipboard_get_image` read had no clipboard to read, as in a Flatpak on
+    /// Wayland (#5031), rather than a clipboard that holds no image. `None` where that can't happen.
+    pub clipboard_unreadable: Option<ClipboardUnreadableFn>,
     /// Preferences persistence: the platform config directory on native, browser storage on
     /// the web (see `prefs_ui`).
     pub load_prefs: Option<LoadTextFn>,
@@ -628,9 +633,9 @@ pub struct PhotocraftApp {
     /// Footprint trail of a retouching drag (see `stroke_trail`).
     trail: Option<stroke_trail::Trail>,
     /// Remove tool strokes waiting to be applied together (Remove after each stroke off), the
-    /// document they belong to, and their tint on the canvas (`retouch_ui`).
+    /// document, layer and channel they belong to, and their tint on the canvas (`retouch_ui`).
     pub(crate) remove_pending: Vec<Vec<[f64; 3]>>,
-    pub(crate) remove_pending_doc: Option<photocraft_doc::DocId>,
+    pub(crate) remove_pending_target: Option<retouch_ui::RemoveTarget>,
     pub(crate) remove_trail: Option<stroke_trail::Trail>,
     /// The open menus' items, reused between frames (`menus::ItemCache`).
     pub(crate) menu_cache: Option<menus::ItemCache>,
@@ -912,7 +917,7 @@ impl PhotocraftApp {
             committed_stroke: None,
             trail: None,
             remove_pending: Vec::new(),
-            remove_pending_doc: None,
+            remove_pending_target: None,
             remove_trail: None,
             menu_cache: None,
             move_preview: None,
@@ -1173,6 +1178,11 @@ impl PhotocraftApp {
                 self.import_os_clipboard();
             }
             if self.session.clipboard.is_none() && self.services.clipboard_get_image.is_some() {
+                if self.services.clipboard_unreadable.as_ref().is_some_and(|unreadable| unreadable()) {
+                    // The clipboard may well hold an image that can't be reached: say why.
+                    notices::clipboard_unreadable(self);
+                    return Ok(serde_json::json!({"pasted": false}));
+                }
                 // Enabled on the strength of the OS clipboard, which held no image: a quiet no-op.
                 let message = "Nothing to paste: the clipboard holds no image";
                 self.ui.status = tl!(message).into();
@@ -2162,6 +2172,18 @@ impl eframe::App for PhotocraftApp {
             ctx.set_cursor_icon(egui::CursorIcon::Wait);
         }
         let ui_ms = gpu_canvas::now_ms() - t0;
+        // A GPU measurement lands a frame or two after the refresh it belongs to. Refreshes
+        // carry them out, but the last refresh before the app settles has none following it, so
+        // drain the timer here too or its number is never reported. Drain it either way: a
+        // measurement left sitting would surface later against an unrelated refresh. Report it
+        // only while the canvas is still on the GPU, since a CPU refresh clears `gpu_ms`
+        // precisely so a GPU number is never shown as that refresh's.
+        if let Some(gpu) = &self.gpu
+            && let Some(t) = gpu.take_gpu_timing()
+            && self.perf.last_refresh.starts_with("gpu")
+        {
+            self.perf.record_gpu(t);
+        }
         self.perf.frame(ui_ms);
         if self.stroke_trace.enabled() {
             self.stroke_trace.canvas(self.perf.frame_refresh_ms);
@@ -3011,6 +3033,9 @@ mod dropdown_press_tests;
 
 #[cfg(test)]
 mod marquee_tests;
+
+#[cfg(test)]
+mod guide_cursor_tests;
 
 #[cfg(test)]
 mod canvas_menu_tests;

@@ -8,7 +8,7 @@ use photocraft_geom::Rect;
 #[cfg(not(target_os = "android"))]
 use photocraft_ui_egui::{FileDialogAnswer, FileDialogReply, FileDialogRequest};
 use photocraft_ui_egui::{Recoverable, Services};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 // Only rfd's async dialog plumbing uses futures (it is desktop-only); the recovery store shares
 // its `RecoveryStore` through `Rc<RefCell<…>>`, which Android needs too.
 #[cfg(not(target_os = "android"))]
@@ -316,7 +316,7 @@ fn block_on<T>(future: impl Future<Output = T>) -> T {
 
 /// Per-user settings directory: `PHOTOCRAFT_CONFIG_DIR`, else `<exe dir>/PhotoCraftData` in
 /// portable mode, else the platform convention. Everything the app persists lives under it
-/// except, on Windows, crash-recovery autosaves; see [`crate::app_dirs`].
+/// except, on Windows and Linux, crash-recovery autosaves; see [`crate::app_dirs`].
 pub fn config_dir() -> Option<PathBuf> {
     crate::app_dirs::config_dir()
 }
@@ -331,8 +331,9 @@ pub fn presets_dir() -> Option<PathBuf> {
     config_dir().map(|d| d.join("Presets"))
 }
 
-/// Crash-recovery autosaves: under the settings directory, except on Windows, where they stay
-/// out of the roaming profile (see [`crate::app_dirs::recovery_dir`]).
+/// Crash-recovery autosaves: under the settings directory, except where that is synced with the
+/// settings: the Windows roaming profile and the Linux config folder (see
+/// [`crate::app_dirs::resolve_recovery`]).
 fn recovery_dir() -> Option<PathBuf> {
     crate::app_dirs::recovery_dir()
 }
@@ -519,6 +520,7 @@ pub fn native(automation: Option<photocraft_automation::AuthorizedWorkspace>) ->
     // built only on the desktop; Android's text clipboard is egui's own.
     #[cfg(not(target_os = "android"))]
     let clip: Rc<RefCell<Option<arboard::Clipboard>>> = Rc::default();
+    let clip_unreadable: Rc<Cell<bool>> = Rc::default();
     let automation_read = automation.clone().map(|workspace| {
         Box::new(move |path: &str| {
             let bytes = workspace.read(path).map_err(|error| error.to_string())?;
@@ -604,11 +606,19 @@ pub fn native(automation: Option<photocraft_automation::AuthorizedWorkspace>) ->
         #[cfg(not(target_os = "android"))]
         clipboard_get_image: Some({
             let clip = clip.clone();
+            let unreadable = clip_unreadable.clone();
             Box::new(move || {
                 let mut slot = clip.try_borrow_mut().ok()?;
                 let cb = match slot.as_mut() {
                     Some(c) => c,
-                    None => slot.insert(arboard::Clipboard::new().ok()?),
+                    None => {
+                        // arboard opens only when some backend works. In a Flatpak on Wayland none
+                        // does (#5031): the sandbox hides the data-control protocol from it, and
+                        // `--socket=fallback-x11` gives no X server while a compositor runs.
+                        let opened = arboard::Clipboard::new();
+                        unreadable.set(opened.is_err());
+                        slot.insert(opened.ok()?)
+                    }
                 };
                 // Copied files first: Finder also puts the file's icon on the clipboard as an
                 // image, which would otherwise paste instead of the file.
@@ -624,6 +634,7 @@ pub fn native(automation: Option<photocraft_automation::AuthorizedWorkspace>) ->
                 None
             })
         }),
+        clipboard_unreadable: Some(Box::new(move || clip_unreadable.get())),
         #[cfg(target_os = "android")]
         clipboard_get_image: None,
         load_prefs: Some(Box::new(|| std::fs::read_to_string(prefs_file()?).ok())),
