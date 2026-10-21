@@ -9,9 +9,6 @@ use photocraft_geom::Rect;
 use photocraft_ui_egui::{FileDialogAnswer, FileDialogReply, FileDialogRequest};
 use photocraft_ui_egui::{Recoverable, Services};
 use std::cell::{Cell, RefCell};
-// Only rfd's async dialog plumbing uses futures (it is desktop-only); the recovery store shares
-// its `RecoveryStore` through `Rc<RefCell<…>>`, which Android needs too.
-#[cfg(not(target_os = "android"))]
 use std::future::Future;
 use std::path::{Path, PathBuf};
 #[cfg(not(target_os = "android"))]
@@ -296,7 +293,6 @@ fn path_of(file: &rfd::FileHandle) -> String {
 }
 
 /// Runs `future` to completion on this thread, sleeping until it is woken.
-#[cfg(not(target_os = "android"))]
 pub(crate) fn block_on<T>(future: impl Future<Output = T>) -> T {
     struct Unpark(std::thread::Thread);
     impl std::task::Wake for Unpark {
