@@ -2165,6 +2165,11 @@
 	Color Replacement Tool	顏色取代工具
 	Color Replacement	顏色取代
 	Wet	濕度
+	Current Brush Load	目前筆刷載入
+	Load Brush	載入筆刷
+	Clean Brush	清理筆刷
+	Load the brush after each stroke	每次描邊後載入筆刷
+	Clean the brush after each stroke	每次描邊後清理筆刷
 	Mix	混合
 	Wetness Jitter	濕度快速變換
 	Mix Jitter	混合快速變換
@@ -2733,6 +2738,7 @@ curves	Smooth	平滑
 	Light Red	淺紅色
 	Medium Blue	中藍色
 	Light Gray	淺灰色
+	Stop	停止
 	Object Finder	物件尋找器
 	No object found there — drag a rectangle around it	那裡找不到物件 — 請在其周圍拖曳矩形
 	Remove after each stroke	每次描邊後移除
@@ -2886,3 +2892,11 @@ curves	Smooth	平滑
 	Not now	稍後再說
 	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft 需要「所有檔案存取權」才能在「共享儲存空間」中開啟和儲存檔案。
 	Skip the all-files-access prompt at launch	啟動時不再提示所有檔案存取權
+
+# DDS Options (#1327)
+	DDS Options	DDS 選項
+	Compression	壓縮
+	Generate Mipmaps	產生 Mipmap
+
+# Graphics Adapter preference (#1885)
+	GPU adapter	GPU 介面卡

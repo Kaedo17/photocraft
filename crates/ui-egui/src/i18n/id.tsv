@@ -2117,6 +2117,11 @@
 	Apply the pen's tilt and rotation to the tip shape	Terapkan kemiringan dan rotasi pena ke bentuk ujung
 	Mixer Brush	Kuas Pencampur
 	Wet	Basah
+	Current Brush Load	Muatan Kuas Saat Ini
+	Load Brush	Muat Kuas
+	Clean Brush	Bersihkan Kuas
+	Load the brush after each stroke	Muat kuas setelah setiap goresan
+	Clean the brush after each stroke	Bersihkan kuas setelah setiap goresan
 	Mix	Campur
 	Wetness Jitter	Jitter Kebasahan
 	Mix Jitter	Jitter Campuran
@@ -3272,3 +3277,11 @@ curves	Smooth	Haluskan
 	Not now	Nanti saja
 	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft memerlukan akses ke semua file untuk membuka dan menyimpan file di "Penyimpanan bersama".
 	Skip the all-files-access prompt at launch	Jangan tanyakan akses semua file saat mulai
+
+# DDS Options (#1327)
+	DDS Options	Opsi DDS
+	Compression	Kompresi
+	Generate Mipmaps	Buat mipmap
+
+# Graphics Adapter preference (#1885)
+	GPU adapter	Adaptor GPU

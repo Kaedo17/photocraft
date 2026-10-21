@@ -2142,6 +2142,11 @@
 	Mixer Brush Tool	Narzędzie Pędzel mieszający
 	Color Replacement Tool	Narzędzie Zamiana koloru
 	Wet	Wilgotność
+	Current Brush Load	Bieżący ładunek pędzla
+	Load Brush	Napełnij pędzel
+	Clean Brush	Wyczyść pędzel
+	Load the brush after each stroke	Napełniaj pędzel po każdym pociągnięciu
+	Clean the brush after each stroke	Czyść pędzel po każdym pociągnięciu
 	Mix	Mieszanie
 	Wetness Jitter	Rozrzut wilgotności
 	Mix Jitter	Rozrzut mieszania
@@ -3875,3 +3880,11 @@ curves	Smooth	Wygładź
 	Not now	Nie teraz
 	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft potrzebuje dostępu do wszystkich plików, aby otwierać i zapisywać pliki w „Pamięci współdzielonej”.
 	Skip the all-files-access prompt at launch	Nie pokazuj przy starcie prośby o dostęp do wszystkich plików
+
+# DDS Options (#1327)
+	DDS Options	Opcje DDS
+	Compression	Kompresja
+	Generate Mipmaps	Generuj mipmapy
+
+# Graphics Adapter preference (#1885)
+	GPU adapter	Karta GPU

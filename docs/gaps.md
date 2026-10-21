@@ -43,6 +43,10 @@ what an agent can't finish alone.
 ### G1. PSD fidelity and Photoshop acceptance
 - **Missing:** PSDs we write are not always accepted by Photoshop, and Photoshop-authored files
   don't always render as Photoshop renders them.
+- **Partial (2026-10-15, #5972 A1):** `GdFl` noise fills render when all three RGB ranges are
+  constant and transparency is disabled. Variable-range synthesis, HSB/Lab modes and
+  transparency remain unsupported and are preserved verbatim; the five visual examples do not
+  establish Photoshop's exact noise algorithm or include this degenerate constant case.
 - **Evidence:** corpus floors (`crates/io/tests/corpus.rs`, scorecard): Photoshop-authored
   oracles 188/258 (73%; smart filter masks 2026-10-14; CMYK and Lab adjustment layers, 32-bit unclipped adjustments, Levels, Threshold, Posterize and mask feathers 2026-10-13; Gradient Map luminosity 2026-10-13; CMYK Invert, Posterize and Threshold on the inks 2026-10-12), io corpus 148/170 (87%), psd-tools 249/309 (81%); round trips ~100%
   within the corpus. Smart-filter re-render matches 5/30. User reports: a PSD with text layers
@@ -287,9 +291,10 @@ what an agent can't finish alone.
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-10-21 | minor | G18: a finger that moves now scrolls the panels instead of dragging the row under it (Layers, Brushes, Actions, History, Channels, Smart Filters, presets); a hold then a move still drags, a still hold still opens the row's menu, drops keep the release position, the tools rail hides its bar and opens no flyout mid-pan; synced with upstream 0.11.1 (7 commits) |
+| 2026-10-21 | minor | G18: a finger that moves now scrolls the panels instead of dragging the row under it (Layers, Brushes, Actions, History, Channels, Smart Filters, presets); a hold then a move still drags, a still finger is left to egui's press-and-hold, drops keep the release position, a row scrolled out of its panel no longer takes a swipe from the list beneath it (the History panel's hidden rows over the Layers list, measured on the tablet), the tools rail hides its bar and opens no flyout mid-pan; synced with upstream 0.11.1 (`b097800e`, 168 commits) |
 | 2026-10-19 | minor | G18: the branch synced with upstream `main` (122 commits), and Android release signing measured: `cargo apk build --release` signed by `CARGO_APK_RELEASE_KEYSTORE` + `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` (a PKCS12 keystore held outside the repository) produced a 30,290,756-byte APK whose `apksigner verify --print-certs` SHA-256 `95F06A22397A0DEBBEC36A84E4B14AFF56B0E28E74135B3805DA01CE26FF89F4` matches the keystore's; installed on a TECNO KJ5 (Android 13) over an uninstall of the debug build and run there. A missing "All files access" grant is now asked for once at launch (**Grant access** opens `Settings$AppManageExternalStorageActivity`; toggling that page's switch sets `MANAGE_EXTERNAL_STORAGE: allow`; **Not now** writes the Android-only `workspace.androidSkipAllFilesAccessPrompt`) |
 | 2026-10-18 | minor | G9: with no selection, Copy takes fill and adjustment layers whole and Paste recreates them (#2344); UI-217-23 stays partial (a single pixel layer copies its pixels only); estimate unchanged |
+| 2026-10-15 | minor | G1 / #5972 A1: render only provably constant-RGB `GdFl` noise fills; variable noise synthesis remains open |
 | 2026-10-18 | minor | G18: the port verified on a 720x1612 phone (Android 13, landscape window 1532x720 px = 809x380 points) as well as the tablet: it launches and renders, the picker's icon views work, a dialog body taller than the window scrolls so its Create / Close row stays inside the window (measured at the window's own scale: New Document's Create and Close fell below the lower edge, unreachable; at 50 % UI scale every dialog fits), and a tap on an icon tile's picture selects the tile (measured: it did nothing before) |
 | 2026-10-17 | minor | G18 new: the Android arm64 port (NativeActivity entry, app-private storage, in-app file browser, shared storage behind "All files access", vendored winit mouse, modifier stamping) verified on a Samsung Tab S11, Android 16; release signing and store packaging remain open |
 | 2026-10-14 | minor | G1: a PSD smart object's filter mask shows when the file opens (Photoshop stores the filtered pixels unmasked); export stores them that way too; Photoshop-oracle floor 185 → 188 of 258 |

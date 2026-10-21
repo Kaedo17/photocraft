@@ -2176,6 +2176,11 @@
 	Color Replacement Tool	Nástroj Nahrazení barvy
 	Color Replacement	Nahrazení barvy
 	Wet	Vlhkost
+	Current Brush Load	Aktuální náplň štětce
+	Load Brush	Naplnit štětec
+	Clean Brush	Vyčistit štětec
+	Load the brush after each stroke	Naplnit štětec po každém tahu
+	Clean the brush after each stroke	Vyčistit štětec po každém tahu
 	Mix	Míchání
 	Wetness Jitter	Kolísání vlhkosti
 	Mix Jitter	Kolísání míchání
@@ -3883,3 +3888,10 @@ navigator	Zoom	Zvětšení
 	Not now	Teď ne
 	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft potřebuje přístup ke všem souborům, aby mohl otevírat a ukládat soubory ve „Sdíleném úložišti“.
 	Skip the all-files-access prompt at launch	Při spuštění nezobrazovat výzvu k přístupu ke všem souborům
+
+# DDS Options (#1327)
+	DDS Options	Možnosti DDS
+	Generate Mipmaps	Generovat mipmapy
+
+# Graphics Adapter preference (#1885)
+	GPU adapter	Adaptér GPU

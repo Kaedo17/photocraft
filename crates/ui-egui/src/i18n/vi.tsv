@@ -1296,6 +1296,11 @@
 	Mixer Brush	Cọ trộn
 	Mixer Brush Tool	Công cụ Cọ trộn
 	Wet	Ướt
+	Current Brush Load	Lượng sơn hiện tại của cọ
+	Load Brush	Nạp sơn cho cọ
+	Clean Brush	Làm sạch cọ
+	Load the brush after each stroke	Nạp sơn cho cọ sau mỗi nét vẽ
+	Clean the brush after each stroke	Làm sạch cọ sau mỗi nét vẽ
 	Load	Tải
 	Mix	Trộn
 	Flow	Lưu lượng
@@ -3762,3 +3767,11 @@ curves	Smooth	Làm mượt
 	Not now	Để sau
 	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft cần quyền truy cập mọi tệp để mở và lưu tệp trong "Bộ nhớ chia sẻ".
 	Skip the all-files-access prompt at launch	Không hỏi quyền truy cập mọi tệp khi khởi động
+
+# DDS Options (#1327)
+	DDS Options	Tùy chọn DDS
+	Compression	Nén
+	Generate Mipmaps	Tạo mipmap
+
+# Graphics Adapter preference (#1885)
+	GPU adapter	Bộ điều hợp GPU

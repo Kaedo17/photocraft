@@ -2092,6 +2092,11 @@
 	Mixer Brush Tool	Karıştırıcı Fırça Aracı
 	Color Replacement Tool	Renk Değiştirme Aracı
 	Wet	Islaklık
+	Current Brush Load	Geçerli Fırça Yükü
+	Load Brush	Fırçayı Yükle
+	Clean Brush	Fırçayı Temizle
+	Load the brush after each stroke	Her vuruştan sonra fırçayı yükle
+	Clean the brush after each stroke	Her vuruştan sonra fırçayı temizle
 	Mix	Karışım
 	Wetness Jitter	Islaklık Titreme
 	Mix Jitter	Karıştırma Titreşimi
@@ -4005,3 +4010,10 @@ cameraData	Lens	Lens
 	Not now	Şimdi değil
 	PhotoCraft needs "All files access" to open and save files in shared storage.	PhotoCraft, "Paylaşılan depolama"daki dosyaları açmak ve kaydetmek için tüm dosyalara erişim gerektirir.
 	Skip the all-files-access prompt at launch	Başlangıçta tüm dosyalara erişim sorulmasın
+
+# DDS Options (#1327)
+	DDS Options	DDS Seçenekleri
+	Generate Mipmaps	Mipmap oluştur
+
+# Graphics Adapter preference (#1885)
+	GPU adapter	GPU bağdaştırıcısı
