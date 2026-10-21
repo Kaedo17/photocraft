@@ -225,3 +225,46 @@ fn click_only_rows_pan_once_through_the_area_itself() {
     // The finger travelled 75 px; the area pans by exactly that, once.
     assert!((60.0..=100.0).contains(&moved), "the area panned by the finger's travel, not twice it: {moved}");
 }
+
+/// A row that is clipped out of view — a scrolled panel's rows keep being laid out below its
+/// viewport, where the panel beneath it is drawn — must not take the finger. On the tablet the
+/// History panel's hidden rows swallowed a swipe made on the Layers list under them: the list
+/// neither scrolled nor dragged a row, and a row of the panel above panned out of sight instead.
+#[test]
+fn a_row_clipped_out_of_view_never_takes_the_press() {
+    let ctx = egui::Context::default();
+    let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(300.0, 200.0));
+    let mut closed = TouchRow::None;
+    let mut offset = 0.0;
+    let mut frame = |events: Vec<egui::Event>, at: f64| {
+        let input = egui::RawInput { screen_rect: Some(screen), time: Some(at), events, ..Default::default() };
+        let mut answer = TouchRow::None;
+        let mut run = ctx.run_ui(input, |ui| {
+            // A panel clipped to its top half: ten rows in a 100 pt viewport, so rows 5..9 are
+            // laid out below the clip, where the next panel down is drawn.
+            ui.set_clip_rect(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(300.0, 100.0)));
+            let out = crate::widgets::panel_scroll().id_salt("clipped-row-bench").max_height(100.0).auto_shrink([false, false]).show(ui, |ui| {
+                for i in 0..10 {
+                    let r = ui.allocate_exact_size(egui::vec2(ui.available_width(), 20.0), egui::Sense::click_and_drag()).1;
+                    let a = crate::widgets::touch_row(ui, &r);
+                    if i == 7 {
+                        answer = a;
+                    }
+                }
+            });
+            offset = out.state.offset.y;
+        });
+        run.textures_delta.clear();
+        closed = answer;
+    };
+    // Row 7 sits at y 140..160: below the 100 pt clip, but its rect still covers the finger.
+    let at = egui::pos2(150.0, 150.0);
+    frame(vec![], -0.1);
+    frame(vec![touch(egui::TouchPhase::Start, at), egui::Event::PointerMoved(at), button(at, true)], 0.0);
+    for k in 1..=4 {
+        let p = egui::pos2(at.x, at.y - 8.0 * k as f32);
+        frame(vec![touch(egui::TouchPhase::Move, p), egui::Event::PointerMoved(p)], 0.05 * k as f64);
+    }
+    assert_eq!(closed, TouchRow::None, "a clipped row never takes the press");
+    assert_eq!(offset, 0.0, "and its area does not pan for a finger outside its viewport");
+}

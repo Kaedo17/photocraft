@@ -1813,7 +1813,11 @@ pub fn touch_row(ui: &Ui, row: &Response) -> TouchRow {
     let press = ctx.data(|d| d.get_temp::<Option<TouchPress>>(touch_press_id())).flatten().filter(|p| press_start.is_none_or(|t| t == p.start));
     let press = match press {
         Some(p) => Some(p),
-        None if touch && pressed && origin.is_some_and(|o| row.rect.contains(o)) => {
+        // `interact_rect` is the row clipped to its panel's viewport: a row scrolled out of a
+        // panel is still laid out below it, over the panel underneath — on the tablet the History
+        // panel's hidden rows took a swipe made on the Layers list below them, so the list neither
+        // scrolled nor dragged. A row the finger cannot see must not answer for it.
+        None if touch && pressed && origin.is_some_and(|o| row.interact_rect.contains(o)) => {
             let p = TouchPress {
                 row: row.id,
                 start: press_start.unwrap_or(time),

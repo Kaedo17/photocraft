@@ -6786,3 +6786,7 @@ mod sampler_readout_tests {
         assert_eq!(sampler_readouts(&mut app).len(), 2, "so does a new sampler");
     }
 }
+
+#[cfg(test)]
+#[path = "touch_scroll_tests.rs"]
+mod touch_scroll_tests;
