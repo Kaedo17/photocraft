@@ -1,6 +1,6 @@
 # Where PhotoCraft falls short of Photoshop
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-22 · **Change:** minor (G18: the manifest declares the legacy storage permissions Android 9 asks for (`max_sdk_version = 29`) and Android 10 is declined, `requestLegacyExternalStorage` not emittable by cargo-apk 0.10; the Google Play policy risk of `MANAGE_EXTERNAL_STORAGE` and its SAF route recorded → estimate 20–45 h becomes 35–60 h; G18: saving over an existing file asks Replace? — the old file is otherwise lost without confirmation) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-22 · **Change:** minor (G18: the manifest declares the legacy storage permissions Android 9 asks for (`max_sdk_version = 29`) and Android 10 is declined, `requestLegacyExternalStorage` not emittable by cargo-apk 0.10; the Google Play policy risk of `MANAGE_EXTERNAL_STORAGE` and its SAF route recorded → estimate 20–45 h becomes 35–60 h; G18: saving over an existing file asks Replace? — the old file is otherwise lost without confirmation; merged upstream main 1054 commits: G9: Preferences › File Handling › Save in Background takes effect, #6207, 24 of 169 preferences do nothing; G7: Content-Aware Move previews every selection the command takes, coarse then exact, TOOL-213-4 done, #6680; G4: Pattern Stamp and Background Eraser draw live, TOOL-213-7; G9: Animated Zoom pref read: holding the Zoom tool zooms continuously, #6210; G2: a cancelled 24 MP Gaussian Blur job stops in at most 44 ms, P25 under its 200 ms budget in local runs, baseline not re-run, #6205; G1: generated large-file fixtures, a 4.38 GB PSB opens on Windows through io, FILE-216-2 done, #5107) · **Target:** Adobe Photoshop 2026
 
 Every known shortfall against Photoshop 2026 (27.11.0), one entry each, ranked by user impact
 on the way to beta. This is the work list agents pick from: take the highest-ranked entry that
@@ -52,7 +52,8 @@ what an agent can't finish alone.
   within the corpus. Smart-filter re-render matches 5/30. User reports: a PSD with text layers
   re-saved unmodified would not reopen (#2374, closed 2026-10-10), Photoshop 26.6 cannot reopen our files (#1281), "PSD not
   opening in Photoshop" (#2469), a CS2-era smart object unavailable (#2465, fixed 2026-10-12), PSB smart object
-  blank (#1764), perspective placed layers flattened (#579, fixed by #426), PSB > 4 GB fails on Windows (#375).
+  blank (#1764), perspective placed layers flattened (#579, fixed by #426), PSB > 4 GB fails on Windows (#375; a generated 4.38 GB PSB opens, saves and re-opens
+  through io on Windows, io tests/large_files.rs, 2026-10-13).
   No test opens our exports in a third-party editor (FILE-216-4).
 - **Impact:** PSD is the format professionals exchange. Beta requires it to be reliable.
 - **Estimate:** 150–250 h. **Human:** opening exports in Photoshop on the owner's Mac (or a
@@ -71,9 +72,10 @@ what an agent can't finish alone.
 ### G7. Workspaces shown as parameter dialogs
 - **Missing:** Select and Mask workspace layout
   (TOOL-214-1, Refine Hair #2671; its view modes preview live since #1754, Refine Edge Brush #2972); Content-Aware Fill workspace with a paintable sampling area
-  (TOOL-214-15); Vanishing Point plane editor (TOOL-214-14); Content-Aware Move's live preview
-  of the result (TOOL-213-4; Transform On Drop and Content-Aware Scale through the transform box,
-  TOOL-214-7, are done).
+  (TOOL-214-15); Vanishing Point plane editor (TOOL-214-14). Content-Aware Move's live preview
+  of the result is done (TOOL-213-4, 2026-10-16, #6680: every selection the command takes, coarse
+  first for large ones, then the exact result), as are Transform On Drop and Content-Aware Scale
+  through the transform box (TOOL-214-7).
   Blur Gallery: Field, Iris, Tilt-Shift and Spin Blur are edited on the image with Photoshop's pins
   and handles (2026-10-11, #3373); Tilt-Shift has one band (the engine takes one), and Path Blur
   (#1759) is still a parameter dialog.
@@ -83,13 +85,15 @@ what an agent can't finish alone.
 - **Estimate:** 80–140 h.
 
 ### G8. Type depth
-- **Missing:** type on a path (TYPE-218-1), paragraph direction UI (TYPE-218-2), complex-script
-  fallback fonts and golden tests (TYPE-218-3), OpenType Numerals and Stylistic Sets submenus
-  (TYPE-218-5; the Character panel buttons landed 2026-10-11, #3752), live Warp Text preview
-  (TYPE-218-7, #2689), "rasterize and continue" for distort/perspective on type
-  (TYPE-218-9), text free transform (#2630). Done since the re-measure: manual and optical kerning
-  with PSD round trip (TYPE-218-6, #206), variable-font axes (TYPE-218-4, #2985).
-- **Evidence:** scorecard Type: 3 done, 2 partial, 4 missing. 2026-10-11: 2/3/4/5 clicks select
+- **Missing:** type on a path beyond rigid glyph placement (TYPE-218-1 partial, #4365),
+  paragraph direction UI (TYPE-218-2), complex-script fallback fonts and golden tests
+  (TYPE-218-3), OpenType Numerals and Stylistic Sets submenus
+  (TYPE-218-5; the Character panel buttons landed 2026-10-11, #3752), text free transform
+  (#2630). Done since the re-measure: manual and optical kerning with PSD round trip
+  (TYPE-218-6, #206), variable-font axes (TYPE-218-4, #2985), Warp on live type without a
+  rasterize prompt, as in Photoshop (TYPE-218-9, #3004), and the live Warp Text preview that opens
+  with the layer's warp (TYPE-218-7, #2689).
+- **Evidence:** scorecard Type: 5 done, 3 partial, 1 missing. 2026-10-11: 2/3/4/5 clicks select
   word, line, paragraph and all text, with tests (TYPE-218-8, #3493). The Type tool froze the app for
   60 s on one macOS machine (#2518).
 - **Estimate:** 120–200 h.
@@ -177,8 +181,9 @@ what an agent can't finish alone.
 - **Missing:** lag with big brushes (#2619, #1994) and under the cursor (#2566, #1343); jumpy
   pressure on Windows (#2046) and tap sensitivity (#1933); stair-stepped line weights (#1776),
   interpolation and smoothing problems (#2138), edge falloff (#2149), pixelated cursor vs
-  Photoshop (#1433), brush rotation not driven by pen rotation (#1301); live preview only for
-  Brush and Eraser (TOOL-213-7); no image file as a brush tip (TOOL-213-12); per-control pressure
+  Photoshop (#1433), brush rotation not driven by pen rotation (#1301); no live preview for the
+  Mixer Brush yet (TOOL-213-7, in PR #3627; the other brush tools draw live, Spot Healing and Remove
+  compute on release as in Photoshop); no image file as a brush tip (TOOL-213-12); per-control pressure
   curves (TOOL-213-11); 4 of Photoshop's symmetry modes.
 - **Detail:** [`brush-parity.md`](brush-parity.md).
 - **Estimate:** 100–180 h. **Human:** checking feel on real tablets.
@@ -200,9 +205,12 @@ what an agent can't finish alone.
 - **Estimate:** 60–110 h.
 
 ### G9. Panels, preferences and workspace
+- **Progress (2026-10-15):** Preferences › General › Animated Zoom takes effect: a held Zoom
+  tool press zooms continuously about the press point, ⌥ out (#6210, `ui-egui/src/zoom_hold.rs`).
 - **Progress (2026-10-12):** toolbar tool shortcuts can be reassigned, removed and reset (#4086),
   with saved bindings, matching toolbar hints and regression coverage (`ui-egui/src/tool_shortcuts.rs`).
-- **Missing:** 27 of 156 preferences do nothing (scorecard prefs audit); panel groups can't
+- **Missing:** 24 of 171 preferences do nothing (scorecard prefs audit, 2026-10-15: Save in
+  Background now takes effect, #6207); panel groups can't
   float or tear off into OS windows (UI-217-5, #1828, #1213, #2305); Color panel lacks wheel and
   slider modes (UI-217-17, #2569); more themes (UI-217-11, #2661); a single pixel layer
   copies without its mask and styles (UI-217-23; fill and adjustment layers copy whole, #2344); tool-specific context menus beyond brushes, selections and Pen
@@ -217,6 +225,14 @@ what an agent can't finish alone.
   default small blur and the 36 MP saturated-field gain are inconclusive.
   [Method and full ranges](tilt-shift-performance.md). Native GUI latency remains
   unmeasured; no scorecard budget or parity percentage is changed by this work.
+- **Measured progress (2026-10-15):** P25, cancelling a Gaussian Blur r 50 job on 24 MP, stops
+  within 13–44 ms max over five runs (was 337–399 ms; budget 200 ms): the transparency-lock
+  pass that puts a Background's alpha back now runs per tile in parallel and checks for
+  cancellation, and column-strip box passes check between passes. On a layer with locked
+  transparency (a Background) the uncancelled job is ~40% faster (p50 642–735 → 395–409 ms);
+  other layers gain only the strip checks. Local runs, `perf/baseline.json` not re-measured yet
+  (the scorecard still shows P25 as not run); command, revision, machine and per-run numbers in
+  #6206. #6205.
 - **Missing:** 22 of 25 budgeted scenarios are over budget (baseline 2026-10-05, a heavily
   loaded machine): layer move with styles 321 ms p50 against 25 ms, opacity change 276 ms
   against 20 ms, paste 12 MP 1.2 s against 100 ms, layer move on 15000×10000 16-bit 2.7 s,
@@ -307,11 +323,16 @@ what an agent can't finish alone.
 | 2026-10-19 | minor | G18: the branch synced with upstream `main` (122 commits), and Android release signing measured: `cargo apk build --release` signed by `CARGO_APK_RELEASE_KEYSTORE` + `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` (a PKCS12 keystore held outside the repository) produced a 30,290,756-byte APK whose `apksigner verify --print-certs` SHA-256 `95F06A22397A0DEBBEC36A84E4B14AFF56B0E28E74135B3805DA01CE26FF89F4` matches the keystore's; installed on a TECNO KJ5 (Android 13) over an uninstall of the debug build and run there. A missing "All files access" grant is now asked for once at launch (**Grant access** opens `Settings$AppManageExternalStorageActivity`; toggling that page's switch sets `MANAGE_EXTERNAL_STORAGE: allow`; **Not now** writes the Android-only `workspace.androidSkipAllFilesAccessPrompt`) |
 | 2026-10-18 | minor | G9: with no selection, Copy takes fill and adjustment layers whole and Paste recreates them (#2344); UI-217-23 stays partial (a single pixel layer copies its pixels only); estimate unchanged |
 | 2026-10-15 | minor | G1 / #5972 A1: render only provably constant-RGB `GdFl` noise fills; variable noise synthesis remains open |
+| 2026-10-15 | minor | G2: a cancelled 24 MP Gaussian Blur job stops within 44 ms max (P25, budget 200 ms; was about 400 ms; local runs, baseline not re-run), the uncancelled job on a locked-transparency layer about 40% faster; #6205 |
+| 2026-10-15 | minor | G9: Animated Zoom preference takes effect (hold the Zoom tool to zoom continuously, #6210); prefs that do nothing 25 of 166; no estimate changed |
+| 2026-10-16 | minor | G7: Content-Aware Move's live preview covers every selection the command takes (over 256 × 256: a coarse result solved scaled down, then the exact one); TOOL-213-4 done (#6680) |
+| 2026-10-15 | minor | G9: Save in Background off saves in the foreground under a modal progress dialog (#6207); preferences that do nothing 25 → 24 of 169 |
 | 2026-10-18 | minor | G18: the port verified on a 720x1612 phone (Android 13, landscape window 1532x720 px = 809x380 points) as well as the tablet: it launches and renders, the picker's icon views work, a dialog body taller than the window scrolls so its Create / Close row stays inside the window (measured at the window's own scale: New Document's Create and Close fell below the lower edge, unreachable; at 50 % UI scale every dialog fits), and a tap on an icon tile's picture selects the tile (measured: it did nothing before) |
 | 2026-10-17 | minor | G18 new: the Android arm64 port (NativeActivity entry, app-private storage, in-app file browser, shared storage behind "All files access", vendored winit mouse, modifier stamping) verified on a Samsung Tab S11, Android 16; release signing and store packaging remain open |
 | 2026-10-14 | minor | G1: a PSD smart object's filter mask shows when the file opens (Photoshop stores the filtered pixels unmasked); export stores them that way too; Photoshop-oracle floor 185 → 188 of 258 |
 | 2026-10-13 | minor | G14: D90 image area measured (4288 × 2848 at (10, 10)); gap remains open |
 | 2026-10-14 | minor | Corpus floors raised to the measured results of the CMYK, Lab, 32-bit, Levels, Threshold, Posterize, feather and pass-through fixes landed together: Photoshop-authored 165 → 185 of 258, io 146 → 148 of 170, psd-tools 242 → 249 of 309 |
+| 2026-10-13 | minor | G1: generated large-file fixtures (20 MP, 150 layers, 2 GB PSD, 4.38 GB PSB) round-trip in io tests/large_files.rs; the 4.38 GB PSB opens on Windows through io (#375 evidence); FILE-216-2 done (#5107) |
 | 2026-10-13 | minor | G1: CMYK Hue/Saturation and Color Balance work on C, M and Y as inverted RGB with black kept, as Photoshop does; cmyk hue-saturation 100% → 0.4–0.7% bad pixels, color-balance 74% → 25%; floor unchanged |
 | 2026-10-13 | minor | G1: CMYK Posterize works on the stored values (1 − ink); psd-tools posterize_cmyk passes; psd-tools floor → 242 of 309 |
 | 2026-10-13 | minor | G1: CMYK stacks with Invert, Posterize, Threshold, Brightness/Contrast, Levels or Curves layers composite on the document's own inks (14 CMYK oracles pass); Photoshop-oracle floor 151 → 165 of 258 |
@@ -338,6 +359,7 @@ what an agent can't finish alone.
 | 2026-10-13 | minor | G10: Cineon read landed (10-bit gray/RGB, shares the DPX path); Cineon write remains open |
 | 2026-10-12 | minor | G10: DPX read and write (#1049); Cineon remains open |
 | 2026-10-12 | minor | G4: checkbox-only Brush Settings rows preserve the open controls and Smoothing settings (#4283); no readiness percentage or estimate changed |
+| 2026-10-11 | minor | G8: the live Warp Text preview (TYPE-218-7) moved to done; TYPE-218-9 listed as done; Type evidence recounted to 5/3/1 (TYPE-218-1 type on a path is partial on main) |
 | 2026-10-12 | minor | G11: Load/Save Actions `.atn` landed (AUTO-219-2 partial); remaining panel work listed |
 | 2026-10-12 | minor | Refreshed against main: G5 items fixed by #2480, #2327, #2609, #2684, #2675, #2556, #2396, #2527, #2625 and TOOL-214-5/#2442; G7 TOOL-214-7 and Transform On Drop done; G2 #2377 fixed (#2417); G9 UI scale (UI-217-9) and Stamp Visible (UI-217-22) done, prefs 27 of 156; G10 #2225 done (#2482); G13 Khmer, Lao, Myanmar fallback (#3259); G14 CR3 line; G17 Windows ARM64 done (DIST-220-2) |
 | 2026-10-11 | minor | G7: Tilt-Shift's band (lines, turn dots) and Spin Blur's pins (outline handles, blur-angle ring) on the image; Path Blur remains a dialog |
@@ -346,6 +368,7 @@ what an agent can't finish alone.
 | 2026-10-11 | minor | D5100 image area and Camera Raw tuning validation; G14 remains open |
 | 2026-10-11 | minor | G13: Czech dynamic UI text localized; engine messages and native review remain open |
 | 2026-10-11 | minor | G8: triple/quadruple/five-click type selection done (TYPE-218-8, #3493); Type evidence recounted |
+| 2026-10-11 | minor | G4: Pattern Stamp and Background Eraser draw live, Spot Healing shows a dark overlay while dragging (#3754); only the Mixer Brush is left of TOOL-213-7 |
 | 2026-10-11 | minor | G8: Character panel OpenType buttons landed (TYPE-218-5, #3752); Numerals and Stylistic Sets submenus still missing |
 | 2026-10-11 | minor | G10: one-page flattened PDF write shipped (io::pdf, #3401); FILE-215-10 now partial |
 | 2026-10-10 | minor | G2: recorded Tilt-Shift computation/filtered-proxy measurements and limits; gap and estimate remain open
