@@ -1,6 +1,6 @@
 # Where PhotoCraft falls short of Photoshop
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-18 · **Change:** minor (G9: fill and adjustment layers copy and paste whole, #2344; G1: smart filter masks show on PSD open, Photoshop-oracle floor 188/258; G10: DPX read and write, #1049, Cineon read; G1: CMYK Hue/Saturation and Color Balance keep the black ink; G1: CMYK Posterize on the stored values, psd-tools oracle floor 242/309; G1: CMYK adjustment layers composite on the document's inks, Photoshop-oracle floor 165/258; G1: CMYK Brightness/Contrast on the inks, CMYK Threshold's luma; G1: modern Brightness/Contrast's brightness curve matches Photoshop, Photoshop-oracle floor 151/258; G1: Lab documents composite on their stored L, a, b, Photoshop-oracle floor 152/258; G1: Levels on whole levels at every step, Photoshop-oracle floor 146/258, psd-tools 238/309; G1: 32-bit Brightness/Contrast legacy, Channel Mixer, Photo Filter and Black & White tint unclipped as in Photoshop, Photoshop-oracle floor 149/258; G1: mask feathers blur with their exact variance, psd-tools oracle floor 240/309; G1: Threshold splits on Photoshop's luminosity, psd-tools oracle floor 241/309; G1: pass-through clipping base with an adjustment renders isolated, psd-tools oracle floor 240/309; G1: 16-bit Posterize as Photoshop bins it, psd-tools oracle floor 241/309; G1: Gradient Map driven by the W3C luminosity, Photoshop-oracle floor 147/258; G7: Field Blur's on-canvas pins, #3373; G4: Hue Jitter amount track, #3825 partial; G4: minimum field interaction, #3825 partial; G1: CMYK Invert, Posterize and Threshold on the inks, 16-bit Lab Invert; Photoshop-oracle floor 145/258; G11: `.atn` import maps 112 events: Select and Mask, Filter Gallery Spatter, Ripple, Crystallize, Pattern Fill layers, mask targeting, Step Backward, nudges in points, Bitmap mode; G5: Free Transform H/V skew fields; G9: toolbar tool shortcut editing; refreshed against main: G2, G5, G7, G9, G10, G13, G14, G17 items that landed; G10: DPX read and write, #1049; G4: checkbox-only Brush Settings rows; G11: Load/Save Actions `.atn` landed, AUTO-219-2 partial; G5: hold-a-key spring-loaded tools landed, #2672; G1: #2465 fixed; stale missing-tool rows corrected: Color Replacement, Red Eye and Add/Delete Anchor Point are live tools, so only Art History Brush is missing; no estimate changed) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-22 · **Change:** minor (G18: the manifest declares the legacy storage permissions Android 9 asks for (`max_sdk_version = 29`) and Android 10 is declined, `requestLegacyExternalStorage` not emittable by cargo-apk 0.10; the Google Play policy risk of `MANAGE_EXTERNAL_STORAGE` and its SAF route recorded → estimate 20–45 h becomes 35–60 h; G18: saving over an existing file asks Replace? — the old file is otherwise lost without confirmation) · **Target:** Adobe Photoshop 2026
 
 Every known shortfall against Photoshop 2026 (27.11.0), one entry each, ranked by user impact
 on the way to beta. This is the work list agents pick from: take the highest-ranked entry that
@@ -36,7 +36,7 @@ what an agent can't finish alone.
 | G15 | AI and generative features | AI | medium (high for some users) | 300–600 h + human | [target-app-parity](target-app-parity.md) |
 | G16 | Plug-in compatibility (.8BF, UXP) | ecosystem | medium | 250–450 h + human | [target-app-parity](target-app-parity.md) |
 | G17 | Platforms and distribution | platforms | low-medium | 30–60 h + human | [scorecard](scorecard.md#distribution) |
-| G18 | Android: release signing and store packaging | platforms | low | 20–45 h + human | [development](development.md#android-build) |
+| G18 | Android: release signing and store packaging | platforms | low | 35–60 h + human | [development](development.md#android-build) |
 
 ## Feature gaps
 
@@ -281,16 +281,28 @@ what an agent can't finish alone.
   a short in-app modal: **Grant access** opens Android's All-files-access page and **Not now** is
   remembered (`workspace.androidSkipAllFilesAccessPrompt`), so reaching shared storage no longer
   needs a manual trip through Settings first — though the grant itself stays user-given and
-  Android can withdraw it at any time. A `--release` APK is signed with a project keystore held
+  Android can withdraw it at any time. A save into a folder already holding that name asks
+  **Replace?** first, as the desktop's system pickers do (the old file was otherwise lost without
+  confirmation). A `--release` APK is signed with a project keystore held
   outside the repository. What it still lacks: store packaging (Google Play / F-Droid) and the
   store accounts that go with it; and there are no system file or message dialogs — the in-app
-  browser stands in for the file ones.
-- **Estimate:** 20–45 h. **Human:** store accounts.
+  browser stands in for the file ones. Two store-shaped limits on shared storage: Google Play
+  restricts `MANAGE_EXTERNAL_STORAGE` to apps whose core purpose needs broad file management, and
+  an image editor normally does not qualify, so a Play build needs either an approved declaration
+  or a flavour without it that reaches images through the Storage Access Framework
+  (`ACTION_OPEN_DOCUMENT` / `ACTION_CREATE_DOCUMENT`) and `READ_MEDIA_IMAGES` — F-Droid and
+  sideloaded builds keep all-files access. Android 10 (API 29) has no shared root at all: it
+  enforces scoped storage for this `targetSdk` and the opt-out (`requestLegacyExternalStorage`)
+  is an application attribute cargo-apk 0.10 cannot emit, so the browser keeps its app-private
+  root there (Android 9 and 11+ work).
+- **Estimate:** 35–60 h. **Human:** store accounts.
 
 ## Revision history
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-21 | minor | G18: the manifest now declares the legacy storage permissions Android 9 asks for (`max_sdk_version = 29`) — undeclared, Android denied them without a dialog and the browser's grant row did nothing — and Android 10 is declined in `android_access::capture` instead of offering a grant that cannot work, since `requestLegacyExternalStorage` is an application attribute cargo-apk 0.10 cannot emit; the Google Play policy risk of `MANAGE_EXTERNAL_STORAGE` and its SAF / `READ_MEDIA_IMAGES` route recorded; estimate 20–45 h → 35–60 h |
+| 2026-10-22 | minor | G18: saving over an existing file in the in-app browser asks **Replace?** first (the old file was overwritten without any confirmation, major); a directory listing is read once per change to the directory (its modification time, one `stat` a frame) instead of on every repaint; thumbnails are keyed by the file's size and modification time so a save over the file is decoded again, and are bounded by a 16384-pixel decode limit instead of the codecs' 2^30 default; threshold tests and i18n (20 catalogs) |
 | 2026-10-21 | minor | G18: a finger that moves now scrolls the panels instead of dragging the row under it (Layers, Brushes, Actions, History, Channels, Smart Filters, presets); a hold then a move still drags, a still finger is left to egui's press-and-hold, drops keep the release position, a row scrolled out of its panel no longer takes a swipe from the list beneath it (the History panel's hidden rows over the Layers list, measured on the tablet), the tools rail hides its bar and opens no flyout mid-pan; synced with upstream 0.11.1 (`b097800e`, 168 commits) |
 | 2026-10-19 | minor | G18: the branch synced with upstream `main` (122 commits), and Android release signing measured: `cargo apk build --release` signed by `CARGO_APK_RELEASE_KEYSTORE` + `CARGO_APK_RELEASE_KEYSTORE_PASSWORD` (a PKCS12 keystore held outside the repository) produced a 30,290,756-byte APK whose `apksigner verify --print-certs` SHA-256 `95F06A22397A0DEBBEC36A84E4B14AFF56B0E28E74135B3805DA01CE26FF89F4` matches the keystore's; installed on a TECNO KJ5 (Android 13) over an uninstall of the debug build and run there. A missing "All files access" grant is now asked for once at launch (**Grant access** opens `Settings$AppManageExternalStorageActivity`; toggling that page's switch sets `MANAGE_EXTERNAL_STORAGE: allow`; **Not now** writes the Android-only `workspace.androidSkipAllFilesAccessPrompt`) |
 | 2026-10-18 | minor | G9: with no selection, Copy takes fill and adjustment layers whole and Paste recreates them (#2344); UI-217-23 stays partial (a single pixel layer copies its pixels only); estimate unchanged |

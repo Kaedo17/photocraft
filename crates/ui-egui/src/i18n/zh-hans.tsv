@@ -2878,6 +2878,7 @@ curves	Smooth	平滑
 	Shared storage	共享存储
 	Shared storage (grant access)	共享存储（授予访问权限）
 	Tap files to select them.	点按文件以选择。
+	{name} already exists. Replace it?	{name} 已存在。要替换吗？
 	This build can't request shared-storage access.	此版本无法请求共享存储访问权限。
 	This folder can't be read yet. Grant PhotoCraft access to all files.	暂时无法读取此文件夹。请授予 PhotoCraft 访问所有文件的权限。
 	Up	上一级

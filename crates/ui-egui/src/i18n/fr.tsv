@@ -3262,6 +3262,7 @@ curves	Smooth	Lisser
 	Shared storage	Stockage partagé
 	Shared storage (grant access)	Stockage partagé (autoriser l'accès)
 	Tap files to select them.	Touchez des fichiers pour les sélectionner.
+	{name} already exists. Replace it?	{name} existe déjà. Le remplacer ?
 	This build can't request shared-storage access.	Cette version ne peut pas demander l'accès au stockage partagé.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Ce dossier n'est pas encore accessible en lecture. Autorisez PhotoCraft à accéder à tous les fichiers.
 	Up	Monter

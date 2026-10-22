@@ -3931,6 +3931,7 @@ curves	Smooth	スムーズ
 	Shared storage	共有ストレージ
 	Shared storage (grant access)	共有ストレージ (アクセスを許可)
 	Tap files to select them.	ファイルをタップして選択します。
+	{name} already exists. Replace it?	{name} は既に存在します。置き換えますか？
 	This build can't request shared-storage access.	このビルドは共有ストレージへのアクセスを要求できません。
 	This folder can't be read yet. Grant PhotoCraft access to all files.	このフォルダーはまだ読み取れません。PhotoCraft にすべてのファイルへのアクセスを許可してください。
 	Up	上へ

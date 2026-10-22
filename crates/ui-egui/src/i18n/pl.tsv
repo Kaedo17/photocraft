@@ -3853,6 +3853,7 @@ curves	Smooth	Wygładź
 	Shared storage	Pamięć współdzielona
 	Shared storage (grant access)	Pamięć współdzielona (przyznaj dostęp)
 	Tap files to select them.	Dotknij plików, aby je wybrać.
+	{name} already exists. Replace it?	{name} już istnieje. Zastąpić go?
 	This build can't request shared-storage access.	Ta kompilacja nie może zażądać dostępu do pamięci współdzielonej.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Nie można jeszcze odczytać tego folderu. Przyznaj PhotoCraftowi dostęp do wszystkich plików.
 	Up	W górę

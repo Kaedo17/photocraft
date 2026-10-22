@@ -3954,6 +3954,7 @@ curves	Smooth	Згладити
 	Shared storage	Спільне сховище
 	Shared storage (grant access)	Спільне сховище (надати доступ)
 	Tap files to select them.	Торкніться файлів, щоб вибрати їх.
+	{name} already exists. Replace it?	{name} вже існує. Замінити його?
 	This build can't request shared-storage access.	Ця збірка не може запросити доступ до спільного сховища.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Цю теку ще не вдається прочитати. Надайте PhotoCraft доступ до всіх файлів.
 	Up	Вгору

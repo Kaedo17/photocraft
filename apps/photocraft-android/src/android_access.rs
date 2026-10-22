@@ -4,8 +4,9 @@
 //! app-private directory. To let a save, export or media import reach shared storage
 //! (`/storage/emulated/0`), the user must grant "All files access" — a special permission Android
 //! never grants silently: the app can only *check* whether it is held and *open the screen* where
-//! the user toggles it (Android 11+), or show the ordinary runtime permission dialog (Android
-//! 9/10, whose legacy `WRITE_EXTERNAL_STORAGE` still opens the whole shared tree). That is all
+//! the user toggles it (Android 11+), or show the ordinary runtime permission dialog (Android 9,
+//! whose legacy `WRITE_EXTERNAL_STORAGE` still opens the whole shared tree; Android 10 is declined
+//! in [`capture`], which nothing below can fix). That is all
 //! this module does — it never reads or writes storage itself, so the browser's own root-clamping
 //! still keeps every answer inside the root the user is browsing.
 //!
@@ -40,7 +41,9 @@ unsafe impl Send for AndroidAccess {}
 unsafe impl Sync for AndroidAccess {}
 
 /// Capture the handles from the activity. `None` (and a log) when no JVM is attached, in which
-/// case the browser simply keeps its app-private root.
+/// case the browser simply keeps its app-private root — and on Android 10, whose raw shared paths
+/// need the `requestLegacyExternalStorage` application attribute cargo-apk 0.10 cannot emit, so
+/// there is nothing to offer or ask for (see `docs/gaps.md` G18).
 pub fn capture(app: &android_activity::AndroidApp) -> Option<AndroidAccess> {
     let vm = app.vm_as_ptr() as *mut jni::sys::JavaVM;
     let activity = app.activity_as_ptr() as jni::sys::jobject;
@@ -48,7 +51,14 @@ pub fn capture(app: &android_activity::AndroidApp) -> Option<AndroidAccess> {
         log::warn!("android access: no JVM on the activity; \"All files access\" stays unavailable");
         return None;
     }
-    Some(AndroidAccess { vm, activity })
+    let access = AndroidAccess { vm, activity };
+    if access.sdk() == Some(29) {
+        log::info!(
+            "android access: Android 10 enforces scoped storage for this app and the legacy opt-out is not in the manifest; the browser keeps its app-private root"
+        );
+        return None;
+    }
+    Some(access)
 }
 
 impl AndroidAccess {
@@ -93,15 +103,17 @@ impl AndroidAccess {
     }
 
     /// Whether shared storage may be read and written right now: "All files access" on Android
-    /// 11+, the legacy storage permission on Android 9/10. `false` when unknown (the browser then
-    /// keeps its app-private root).
+    /// 11+, the legacy storage permission on Android 9 (`capture` declines Android 10, which
+    /// enforces scoped storage here). `false` when unknown (the browser then keeps its
+    /// app-private root).
     pub fn shared_storage_granted(self) -> bool {
         match self.sdk() {
             // `Environment.isExternalStorageManager()` exists only on API 30+.
             Some(sdk) if sdk >= 30 => {
                 self.with_env(|env| env.call_static_method("android/os/Environment", "isExternalStorageManager", "()Z", &[])?.z()).unwrap_or(false)
             }
-            // Android 9/10: the legacy runtime permission, which still unlocks the whole tree.
+            // Android 9: the legacy runtime permission, which still unlocks the whole tree there
+            // (scoped storage arrived with Android 10).
             Some(_) => self
                 .with_env(|env| -> jni::errors::Result<bool> {
                     let perm = env.new_string("android.permission.WRITE_EXTERNAL_STORAGE")?;
@@ -115,7 +127,7 @@ impl AndroidAccess {
     }
 
     /// Ask the user to grant it: Android 11+ opens this app's "All files access" settings page,
-    /// Android 9/10 shows the runtime permission dialog (the browser re-checks the grant on every
+    /// Android 9 shows the runtime permission dialog (the browser re-checks the grant on every
     /// visit, so the answer needs no callback). Best effort: a device that refuses the intent or
     /// an unreachable JVM just leaves the grant un-granted, logged.
     pub fn ask_shared_storage_grant(self) {

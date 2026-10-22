@@ -1897,20 +1897,23 @@ pub fn touch_row(ui: &Ui, row: &Response) -> TouchRow {
 ///
 /// The themes build a `ScrollStyle::thin`, whose `bar_width` is both the widest the bar draws and
 /// the whole width inside which egui hit-tests it — ten points, of which four are drawn while it
-/// floats untouched. A finger that must grab a bar instead of dragging the panel misses that band;
-/// the target is widened once, the first frame a touch screen is in play. Because the bar floats it
-/// still draws four points until it is touched and only then widens to the target, so a desktop
-/// window looks unchanged.
+/// floats untouched. A finger that must grab a bar instead of dragging the panel misses that band,
+/// so the target is widened. Because the bar floats it still draws four points until it is
+/// touched and only then widens to the target, so a desktop window looks unchanged.
+///
+/// Widening is re-checked every frame rather than remembered once: applying a theme replaces the
+/// styles outright (`theme::apply`), which would otherwise drop the wider bar until the next
+/// launch.
 pub fn touch_scroll_target(ctx: &egui::Context) {
     if !(cfg!(target_os = "android") || ctx.input(|i| i.has_touch_screen())) {
         return;
     }
-    let key = egui::Id::new("photocraft-touch-scroll-target");
-    if ctx.data(|d| d.get_temp::<bool>(key)).unwrap_or(false) {
+    let narrower = |s: &egui::Style| s.spacing.scroll.bar_width < TOUCH_BAR_TARGET;
+    let narrow = narrower(&ctx.global_style()) || [egui::Theme::Dark, egui::Theme::Light].iter().any(|t| narrower(&ctx.style_of(*t)));
+    if !narrow {
         return;
     }
     ctx.all_styles_mut(|s| s.spacing.scroll.bar_width = s.spacing.scroll.bar_width.max(TOUCH_BAR_TARGET));
-    ctx.data_mut(|d| d.insert_temp(key, true));
 }
 
 /// The scroll bar's interaction target on a touch screen, in points.
@@ -2904,6 +2907,27 @@ mod tests {
         let (_, wide) = bar_width(vec![touch]);
         assert!(wide >= super::TOUCH_BAR_TARGET, "a finger has to be able to land on the bar: {wide}");
         assert!(wide > plain, "the target only ever widens: {plain} -> {wide}");
+
+        // A theme switch replaces each style outright; the wider target has to come back.
+        let ctx = egui::Context::default();
+        let touch = egui::Event::Touch {
+            device_id: egui::TouchDeviceId(3),
+            id: egui::TouchId(1),
+            phase: egui::TouchPhase::Start,
+            pos: egui::pos2(10.0, 10.0),
+            force: None,
+        };
+        ctx.begin_pass(egui::RawInput { events: vec![touch.clone()], ..Default::default() });
+        super::touch_scroll_target(&ctx);
+        assert!(ctx.style_of(egui::Theme::Dark).spacing.scroll.bar_width >= super::TOUCH_BAR_TARGET);
+        ctx.end_pass().drop_without_applying_deltas();
+        crate::theme::apply(&ctx, crate::theme::ThemeKind::ALL[0]);
+        assert!(ctx.style_of(egui::Theme::Dark).spacing.scroll.bar_width < super::TOUCH_BAR_TARGET, "the theme rebuild starts from the thin bar again");
+        ctx.begin_pass(egui::RawInput { events: vec![touch], ..Default::default() });
+        super::touch_scroll_target(&ctx);
+        let after_theme = ctx.style_of(egui::Theme::Dark).spacing.scroll.bar_width;
+        ctx.end_pass().drop_without_applying_deltas();
+        assert!(after_theme >= super::TOUCH_BAR_TARGET, "a theme switch must not take the touch target away: {after_theme}");
     }
 }
 

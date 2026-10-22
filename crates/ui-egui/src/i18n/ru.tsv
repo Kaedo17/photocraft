@@ -3227,6 +3227,7 @@ curves	Smooth	Сгладить
 	Shared storage	Общее хранилище
 	Shared storage (grant access)	Общее хранилище (разрешить доступ)
 	Tap files to select them.	Коснитесь файлов, чтобы выбрать их.
+	{name} already exists. Replace it?	{name} уже существует. Заменить его?
 	This build can't request shared-storage access.	Эта сборка не может запросить доступ к общему хранилищу.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Эта папка пока недоступна для чтения. Разрешите PhotoCraft доступ ко всем файлам.
 	Up	Вверх

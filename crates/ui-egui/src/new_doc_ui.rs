@@ -1579,6 +1579,24 @@ mod tests {
                     assert!(r.top() >= 0.0 && r.bottom() <= size.y, "{label} at {r:?} is outside the {size:?} window");
                 }
             }
+            // And a control further down the body — Save Preset… sits after every field — must be
+            // reachable by scrolling, not merely the fixed Create / Close row.
+            let over_body = h.get_by_label("Width").rect().center();
+            let before = h.get_by_label("Save Preset…").rect();
+            h.event(egui::Event::PointerMoved(over_body));
+            for _ in 0..8 {
+                h.event(egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Point,
+                    delta: egui::vec2(0.0, -120.0),
+                    modifiers: egui::Modifiers::NONE,
+                    phase: egui::TouchPhase::Move,
+                });
+                h.run_steps(2);
+            }
+            h.run_steps(4);
+            let after = h.get_by_label("Save Preset…").rect();
+            assert!(after.top() < before.top() - 1.0, "the body did not scroll: {before:?} -> {after:?}");
+            assert!(after.top() >= 0.0 && after.bottom() <= size.y, "Save Preset… at {after:?} is outside the {size:?} window");
             // And Create is genuinely usable where it sits: it makes the default 1920 x 1080 document.
             h.get_by_label("Create").click();
             h.run_steps(3);

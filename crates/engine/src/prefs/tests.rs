@@ -598,6 +598,21 @@ fn android_only_preferences_show_only_on_android() {
 }
 
 #[test]
+fn the_picker_view_stores_a_known_choice_and_rejects_another() {
+    let mut s = Session::new();
+    assert_eq!(s.prefs().workspace.picker_view, PickerView::LargeIcons, "the icon views are the default");
+    s.execute("prefs.set", json!({"path": "workspace.pickerView", "value": "medium"})).unwrap();
+    assert_eq!(s.prefs().workspace.picker_view, PickerView::MediumIcons);
+    let before = s.prefs().clone();
+    let err = s.execute("prefs.set", json!({"path": "workspace.pickerView", "value": "huge"})).unwrap_err().to_string();
+    assert!(err.contains("workspace.pickerView") && err.contains("huge"), "names the path and the value: {err}");
+    assert_eq!(s.prefs().workspace.picker_view, before.workspace.picker_view, "a rejected value leaves the preference alone");
+    // The same value in a list of choices, not a string, is rejected too (never a panic).
+    assert!(s.execute("prefs.set", json!({"path": "workspace.pickerView", "value": ["large"]})).is_err());
+    assert_eq!(s.prefs().workspace.picker_view, before.workspace.picker_view);
+}
+
+#[test]
 fn the_default_pressure_curve_is_linear() {
     let c = PressureCurve::new(&Preferences::default().tools.pressure_curve);
     assert!(c.is_linear());

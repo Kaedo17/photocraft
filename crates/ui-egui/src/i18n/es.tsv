@@ -4216,6 +4216,7 @@ navigator	Zoom	Zoom
 	Shared storage	Almacenamiento compartido
 	Shared storage (grant access)	Almacenamiento compartido (conceder acceso)
 	Tap files to select them.	Toca archivos para seleccionarlos.
+	{name} already exists. Replace it?	{name} ya existe. ¿Reemplazarlo?
 	This build can't request shared-storage access.	Esta compilación no puede solicitar acceso al almacenamiento compartido.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Aún no se puede leer esta carpeta. Concede a PhotoCraft acceso a todos los archivos.
 	selected	seleccionados

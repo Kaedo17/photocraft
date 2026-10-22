@@ -4044,6 +4044,7 @@ layerLabel	No Color	Sem cor
 	Shared storage	Armazenamento compartilhado
 	Shared storage (grant access)	Armazenamento compartilhado (conceder acesso)
 	Tap files to select them.	Toque nos arquivos para selecioná-los.
+	{name} already exists. Replace it?	{name} já existe. Substituir?
 	This build can't request shared-storage access.	Esta compilação não pode solicitar acesso ao armazenamento compartilhado.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Ainda não é possível ler esta pasta. Permita que o PhotoCraft acesse todos os arquivos.
 	Up	Subir

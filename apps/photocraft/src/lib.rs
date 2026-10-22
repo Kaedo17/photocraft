@@ -53,7 +53,10 @@ mod control_server;
 mod crash_guard;
 mod cursor;
 // rfd's dialogs never open on Android, so the Linux portal/zenity probe has no callers there.
-#[cfg(any(target_os = "linux", test))]
+// It must still exist on macOS and Windows: `services::show_file_dialog` calls `known_problem()`
+// on every non-Android target, and only the probe itself is Linux-gated (it answers `None`
+// elsewhere, which counts as "a dialog should work").
+#[cfg(not(target_os = "android"))]
 mod file_dialog_probe;
 mod gpu_startup;
 #[cfg(target_os = "linux")]
@@ -1017,7 +1020,13 @@ fn run_inner(
     }
     // Retry in a fresh process: winit event loops cannot be recreated reliably in-process.
     // Only renderer initialization failures qualify; never restart after editing has begun.
-    if retry_cpu && !app_created.load(std::sync::atomic::Ordering::Relaxed) && matches!(&result, Err(eframe::Error::Wgpu(_))) {
+    // Not on Android: there `current_exe()` is the Zygote's `app_process64`, so spawning it would
+    // start an unrelated process and close the activity instead of falling back to the CPU.
+    if cfg!(not(target_os = "android"))
+        && retry_cpu
+        && !app_created.load(std::sync::atomic::Ordering::Relaxed)
+        && matches!(&result, Err(eframe::Error::Wgpu(_)))
+    {
         let reason = result.as_ref().err().map(ToString::to_string).unwrap_or_default();
         if let Some(s) = sentinel.lock().unwrap_or_else(std::sync::PoisonError::into_inner).take() {
             s.finish();

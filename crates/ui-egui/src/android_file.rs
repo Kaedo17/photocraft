@@ -105,6 +105,17 @@ impl StorageRoot {
     }
 }
 
+/// One directory listing, kept while the directory and its modification time are unchanged (see
+/// [`State::listing`]).
+#[derive(Default)]
+struct Listing {
+    dir: PathBuf,
+    /// The directory's modification time when it was read (`None` when it could not be read).
+    stamp: Option<std::time::SystemTime>,
+    dirs: Vec<PathBuf>,
+    files: Vec<PathBuf>,
+}
+
 /// The in-app dialog in progress. Empty when none is open.
 #[derive(Default)]
 pub struct State {
@@ -132,6 +143,13 @@ pub struct State {
     exts: Vec<String>,
     /// A file pick may choose several files.
     many: bool,
+    /// A save that would replace an existing file: the target waiting for "Replace?".
+    replace: Option<PathBuf>,
+    /// The listing last read, reused across frames: `read_dir` plus a `stat` per entry on shared
+    /// storage (FUSE) every repaint is what a folder of camera images costs. Kept while the
+    /// directory and its modification time stay the same — one `stat` a frame — so a file another
+    /// app writes or removes still shows up.
+    listing: Option<Listing>,
     /// The egui frame the modal was last drawn in. eframe runs both `logic` and `ui` every frame
     /// and both poll the file dialog, so without this the modal would be created twice in one
     /// frame, which egui reports as an ID clash (and would process a click twice).
@@ -251,14 +269,24 @@ pub fn show(app: &mut PhotocraftApp, ctx: &egui::Context) {
 }
 
 /// The Save prompt: a folder (with a Change… button that opens the browser) and a name field.
+///
+/// A name that already exists in the folder asks before replacing it, as the system pickers the
+/// desktop uses do: the old file is otherwise lost with no confirmation and no undo.
 fn save_prompt(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, suggested: &str) {
     let fallback = Path::new(suggested).file_name().and_then(|n| n.to_str()).unwrap_or("Untitled").to_string();
     let loc = app.android_file.folder.clone().unwrap_or_else(|| save_dir(base));
     // The soft keyboard appears when the field is tapped; winit raises the IME.
     let mut name = std::mem::take(&mut app.android_file.name);
+    // The target the pending "Replace?" row is about; a name edited since then re-asks.
+    let target = save_path_in(&loc, &name, &fallback);
+    if app.android_file.replace.as_deref().is_some_and(|pending| pending != target) {
+        app.android_file.replace = None;
+    }
+    let asking = app.android_file.replace.clone();
     let mut save = false;
     let mut cancel = false;
     let mut change = false;
+    let mut replace = false;
     egui::Modal::new(egui::Id::new("android-file-save")).show(ctx, |ui| {
         ui.set_min_width(360.0);
         ui.label(format!("{} {}", tl!("Location:"), loc.to_string_lossy()));
@@ -269,18 +297,37 @@ fn save_prompt(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, sugges
         ui.label(tl!("File name:"));
         ui.add(egui::TextEdit::singleline(&mut name).hint_text(&fallback).desired_width(f32::INFINITY));
         ui.add_space(8.0);
-        ui.horizontal(|ui| {
-            save = ui.button(tl!("Save")).clicked();
-            cancel = ui.button(tl!("Cancel")).clicked();
-        });
+        if let Some(pending) = &asking {
+            let shown = pending.file_name().and_then(|n| n.to_str()).unwrap_or_default();
+            ui.label(crate::i18n::fmt(tl!("{name} already exists. Replace it?"), &[("name", shown)]));
+            ui.add_space(8.0);
+            ui.horizontal(|ui| {
+                replace = ui.button(tl!("Replace")).clicked();
+                cancel = ui.button(tl!("Cancel")).clicked();
+            });
+        } else {
+            ui.horizontal(|ui| {
+                save = ui.button(tl!("Save")).clicked();
+                cancel = ui.button(tl!("Cancel")).clicked();
+            });
+        }
     });
     app.android_file.name = name;
-    if change {
+    if let Some(pending) = asking.filter(|_| replace) {
+        app.android_file.replace = None;
+        finish(app, Some(FileDialogAnswer::SaveTo(pending.to_string_lossy().into_owned())));
+    } else if change {
+        app.android_file.replace = None;
         app.android_file.folder = Some(loc.clone());
         app.android_file.browser = Some(loc);
     } else if save {
+        // Recompute from the field as it stands now: the row above is only a hint.
         let path = save_path_in(&loc, &app.android_file.name, &fallback);
-        finish(app, Some(FileDialogAnswer::SaveTo(path.to_string_lossy().into_owned())));
+        if path.exists() {
+            app.android_file.replace = Some(path);
+        } else {
+            finish(app, Some(FileDialogAnswer::SaveTo(path.to_string_lossy().into_owned())));
+        }
     } else if cancel {
         finish(app, None);
     }
@@ -306,9 +353,21 @@ fn browser(app: &mut PhotocraftApp, ctx: &egui::Context, base: &Path, dir: PathB
     let mut ask_grant = false;
     let mut set_view: Option<photocraft_engine::prefs::PickerView> = None;
 
-    let dirs = list_dirs(&dir);
+    // The listing is read once per directory (and once per change to it), not once per repaint:
+    // a shared-storage folder of camera images is a `read_dir` plus a `stat` per entry, and
+    // Android serves that tree through FUSE. The directory's modification time is the one cheap
+    // `stat` that still notices a file another app wrote or removed (or that this app just saved).
+    let stamp = std::fs::metadata(&dir).and_then(|m| m.modified()).ok();
+    let (dirs, files) = match &app.android_file.listing {
+        Some(listing) if listing.dir == dir && listing.stamp == stamp => (listing.dirs.clone(), listing.files.clone()),
+        _ => {
+            let dirs = list_dirs(&dir);
+            let files: Vec<PathBuf> = if is_file { list_files(&dir, &app.android_file.exts) } else { Vec::new() };
+            app.android_file.listing = Some(Listing { dir: dir.clone(), stamp, dirs: dirs.clone(), files: files.clone() });
+            (dirs, files)
+        }
+    };
     let view = app.android_file.view;
-    let files: Vec<PathBuf> = if is_file { list_files(&dir, &app.android_file.exts) } else { Vec::new() };
     let selected = app.android_file.selected.clone();
 
     egui::Modal::new(egui::Id::new("android-file-browser")).show(ctx, |ui| {
@@ -744,6 +803,32 @@ mod ui_tests {
         assert!(!f.h.state().android_file.is_open(), "the prompt closed");
         let expected = f.base.join("Documents/Scene.psd").to_string_lossy().into_owned();
         assert_eq!(out.borrow().as_deref(), Some(expected.as_str()));
+    }
+
+    #[test]
+    fn a_save_over_an_existing_file_asks_before_replacing_it() {
+        let out: Rc<RefCell<Option<String>>> = Rc::default();
+        let slot = out.clone();
+        let mut f = fixture("save-replace", move |app| {
+            app.pick_save("Scene.psd", move |_app, path| {
+                *slot.borrow_mut() = Some(path);
+                Ok(json!("ok"))
+            })
+            .unwrap();
+        });
+        // The name is already taken in Documents/.
+        let existing = f.base.join("Documents/Scene.psd");
+        std::fs::write(&existing, b"an older export").unwrap();
+        f.h.run_steps(1);
+        f.h.get_by_label("Save").click();
+        f.h.run_steps(3);
+        assert!(f.h.state().android_file.is_open(), "the prompt asks before replacing");
+        assert!(out.borrow().is_none(), "nothing is answered until the user confirms");
+        assert_eq!(std::fs::read(&existing).unwrap(), b"an older export", "the old file is untouched");
+        f.h.get_by_label("Replace").click();
+        f.h.run_steps(3);
+        assert!(!f.h.state().android_file.is_open(), "Replace answers the save");
+        assert_eq!(out.borrow().as_deref(), Some(existing.to_string_lossy().as_ref()));
     }
 
     #[test]

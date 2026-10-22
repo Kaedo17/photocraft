@@ -3954,6 +3954,7 @@ curves	Smooth	Εξομάλυνση
 	Shared storage	Κοινόχρηστος χώρος αποθήκευσης
 	Shared storage (grant access)	Κοινόχρηστος χώρος αποθήκευσης (παραχώρηση πρόσβασης)
 	Tap files to select them.	Πατήστε αρχεία για να τα επιλέξετε.
+	{name} already exists. Replace it?	Το {name} υπάρχει ήδη. Αντικατάσταση;
 	This build can't request shared-storage access.	Αυτή η έκδοση δεν μπορεί να ζητήσει πρόσβαση στον κοινόχρηστο χώρο αποθήκευσης.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Ο φάκελος δεν είναι ακόμη αναγνώσιμος. Παραχωρήστε στο PhotoCraft πρόσβαση σε όλα τα αρχεία.
 	Up	Πάνω

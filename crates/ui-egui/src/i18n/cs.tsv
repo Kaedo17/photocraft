@@ -3863,6 +3863,7 @@ navigator	Zoom	Zvětšení
 	Shared storage	Sdílené úložiště
 	Shared storage (grant access)	Sdílené úložiště (udělit přístup)
 	Tap files to select them.	Klepnutím na soubory je vyberte.
+	{name} already exists. Replace it?	{name} již existuje. Nahradit jej?
 	This build can't request shared-storage access.	Tato sestava nemůže požádat o přístup ke sdílenému úložišti.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Tuto složku zatím nelze přečíst. Povolte PhotoCraftu přístup ke všem souborům.
 	selected	vybráno

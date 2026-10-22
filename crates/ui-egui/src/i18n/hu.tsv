@@ -4173,6 +4173,7 @@ cameraRaw	Yellow	Sárga
 	Shared storage	Megosztott tárhely
 	Shared storage (grant access)	Megosztott tárhely (hozzáférés engedélyezése)
 	Tap files to select them.	Koppintson a fájlokra a kijelölésükhöz.
+	{name} already exists. Replace it?	{name} már létezik. Lecseréli?
 	This build can't request shared-storage access.	Ez a build nem kérhet hozzáférést a megosztott tárhelyhez.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Ez a mappa még nem olvasható. Engedélyezze a PhotoCraftnak az összes fájl elérését.
 	selected	kijelölve

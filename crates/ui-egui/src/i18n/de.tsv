@@ -3260,6 +3260,7 @@ curves	Smooth	Glätten
 	Shared storage	Gemeinsamer Speicher
 	Shared storage (grant access)	Gemeinsamer Speicher (Zugriff erlauben)
 	Tap files to select them.	Tippen Sie auf Dateien, um sie auszuwählen.
+	{name} already exists. Replace it?	{name} existiert bereits. Ersetzen?
 	This build can't request shared-storage access.	Diese Version kann keinen Zugriff auf den gemeinsamen Speicher anfordern.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Dieser Ordner kann noch nicht gelesen werden. Erlaube PhotoCraft den Zugriff auf alle Dateien.
 	selected	ausgewählt

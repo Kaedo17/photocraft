@@ -4327,6 +4327,7 @@ shape	Appearance	Izgled
 	Shared storage	Дељени простор
 	Shared storage (grant access)	Дељени простор (дозволи приступ)
 	Tap files to select them.	Додирните датотеке да бисте их изабрали.
+	{name} already exists. Replace it?	{name} već postoji. Zameniti ga?
 	This build can't request shared-storage access.	Ова верзија не може да затражи приступ дељеном простору.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Ова фасцикла се још не може читати. Дозволите програми PhotoCraft приступ свим датотекама.
 	selected	изабрано

@@ -3984,6 +3984,7 @@ cameraData	Lens	Lens
 	Shared storage	Paylaşılan depolama
 	Shared storage (grant access)	Paylaşılan depolama (erişim ver)
 	Tap files to select them.	Seçmek için dosyalara dokunun.
+	{name} already exists. Replace it?	{name} zaten var. Değiştirilsin mi?
 	This build can't request shared-storage access.	Bu derleme paylaşılan depolama erişimi isteyemez.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Bu klasör henüz okunamıyor. PhotoCraft'a tüm dosyalara erişim izni verin.
 	Up	Yukarı

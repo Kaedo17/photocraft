@@ -4014,6 +4014,7 @@ curves	Smooth	Vloeiend maken
 	Shared storage	Gedeelde opslag
 	Shared storage (grant access)	Gedeelde opslag (toegang verlenen)
 	Tap files to select them.	Tik op bestanden om ze te selecteren.
+	{name} already exists. Replace it?	{name} bestaat al. Vervangen?
 	This build can't request shared-storage access.	Deze build kan geen toegang tot gedeelde opslag aanvragen.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Deze map kan nog niet worden gelezen. Verleen PhotoCraft toegang tot alle bestanden.
 	Up	Omhoog

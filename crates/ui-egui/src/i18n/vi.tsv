@@ -3741,6 +3741,7 @@ curves	Smooth	Làm mượt
 	Shared storage	Bộ nhớ chia sẻ
 	Shared storage (grant access)	Bộ nhớ chia sẻ (cấp quyền truy cập)
 	Tap files to select them.	Nhấn vào tệp để chọn.
+	{name} already exists. Replace it?	{name} đã tồn tại. Thay thế?
 	This build can't request shared-storage access.	Bản dựng này không thể yêu cầu quyền truy cập bộ nhớ chia sẻ.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Chưa thể đọc thư mục này. Cấp cho PhotoCraft quyền truy cập mọi tệp.
 	selected	đã chọn

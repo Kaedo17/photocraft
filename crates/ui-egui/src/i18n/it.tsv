@@ -4375,6 +4375,7 @@ shape	Appearance	Aspetto
 	Shared storage	Archiviazione condivisa
 	Shared storage (grant access)	Archiviazione condivisa (concedi accesso)
 	Tap files to select them.	Tocca i file per selezionarli.
+	{name} already exists. Replace it?	{name} esiste già. Sostituirlo?
 	This build can't request shared-storage access.	Questa build non può richiedere l'accesso all'archiviazione condivisa.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Impossibile leggere questa cartella. Concedi a PhotoCraft l'accesso a tutti i file.
 	selected	selezionati

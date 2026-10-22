@@ -13,6 +13,8 @@ use photocraft_codecs::{ChannelLayout, SampleType};
 
 /// The longest side a thumbnail is kept at.
 pub const MAX_EDGE: u32 = 128;
+/// The longest side a source image may have before it is not decoded at all.
+pub const MAX_SOURCE_EDGE: u32 = 16_384;
 /// Decodes started per frame.
 pub const BUDGET: u32 = 2;
 
@@ -20,9 +22,17 @@ pub const BUDGET: u32 = 2;
 /// yet, and for files with no picture to show).
 pub type Thumb = Option<(egui::TextureHandle, [u32; 2])>;
 
+/// The cache key of a file's thumbnail: its path and the file's size and modification time, so a
+/// save over that path (or a file that appears where an undecodable one was) is decoded afresh
+/// instead of showing the old picture — or the old "no picture" — for the rest of the session.
+fn key(path: &Path) -> egui::Id {
+    let stamp = std::fs::metadata(path).ok().map(|m| (m.len(), m.modified().ok()));
+    egui::Id::new(("file-thumb", path.to_string_lossy().into_owned(), stamp))
+}
+
 /// Thumbnail of a file (`None` while not decoded yet, and when it has no picture to show).
 pub fn get(ctx: &egui::Context, path: &Path) -> Thumb {
-    let id = egui::Id::new(("file-thumb", path.to_string_lossy().into_owned()));
+    let id = key(path);
     ctx.data(|d| d.get_temp::<Thumb>(id)).flatten()
 }
 
@@ -36,7 +46,7 @@ pub fn load(ctx: &egui::Context, paths: &[std::path::PathBuf]) -> Vec<String> {
         if budget == 0 {
             break;
         }
-        let id = egui::Id::new(("file-thumb", path.to_string_lossy().into_owned()));
+        let id = key(path);
         if ctx.data(|d| d.get_temp::<Thumb>(id)).is_some() {
             continue;
         }
@@ -58,9 +68,16 @@ fn decode(ctx: &egui::Context, path: &Path) -> Thumb {
         } else {
             bytes
         };
-        let img = photocraft_codecs::decode(&source).ok()?;
+        // Bound the decode itself to the size a thumbnail can use: the default limits allow a
+        // 2^30-pixel image, which would allocate gigabytes before the size check below could
+        // reject it.
+        let mut opts = photocraft_codecs::DecodeOptions::default();
+        opts.limits.max_width = MAX_SOURCE_EDGE;
+        opts.limits.max_height = MAX_SOURCE_EDGE;
+        opts.limits.max_pixels = u64::from(MAX_SOURCE_EDGE) * u64::from(MAX_SOURCE_EDGE);
+        let img = photocraft_codecs::decode_with(&source, &opts).ok()?;
         let (w, h) = (img.width(), img.height());
-        if w == 0 || h == 0 || w > 16_384 || h > 16_384 {
+        if w == 0 || h == 0 || w > MAX_SOURCE_EDGE || h > MAX_SOURCE_EDGE {
             return None;
         }
         let rgba = img.convert(ChannelLayout::Rgba, SampleType::U8);
@@ -129,6 +146,36 @@ mod tests {
         assert_eq!(load(&ctx, std::slice::from_ref(&txt)), vec![txt.to_string_lossy().into_owned()], "probed once");
         assert!(get(&ctx, &txt).is_none(), "and stays None (cached)");
         assert!(load(&ctx, std::slice::from_ref(&txt)).is_empty(), "no second probe");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_file_rewritten_in_place_is_decoded_again() {
+        let dir = dir("rewrite");
+        let path = dir.join("Scene.png");
+        std::fs::write(&path, b"not an image").unwrap();
+        let ctx = egui::Context::default();
+        assert_eq!(load(&ctx, std::slice::from_ref(&path)).len(), 1, "probed once");
+        assert!(get(&ctx, &path).is_none(), "an undecodable file caches as None");
+        // The user saves an image over it from the in-app browser: the old answer must not stick.
+        std::fs::write(&path, png_bytes(64, 300, &vec![200u8; 64 * 300 * 4])).unwrap();
+        assert_eq!(load(&ctx, std::slice::from_ref(&path)).len(), 1, "the new file is decoded");
+        let (_, size) = get(&ctx, &path).expect("the overwritten file shows a picture");
+        // The same nearest-neighbour downscale `decode` applies: ceil(long side / MAX_EDGE).
+        let step = 300u32.div_ceil(MAX_EDGE);
+        assert_eq!(size, [64u32.div_ceil(step), 300u32.div_ceil(step)], "the new picture, scaled down: {size:?}");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn an_image_over_the_size_limit_is_not_decoded() {
+        let dir = dir("oversized");
+        let path = dir.join("huge.png");
+        let w = MAX_SOURCE_EDGE + 1;
+        std::fs::write(&path, png_bytes(w, 1, &vec![0u8; w as usize * 4])).unwrap();
+        let ctx = egui::Context::default();
+        assert_eq!(load(&ctx, std::slice::from_ref(&path)).len(), 1, "probed once");
+        assert!(get(&ctx, &path).is_none(), "an image over the limit has no thumbnail");
         let _ = std::fs::remove_dir_all(&dir);
     }
 

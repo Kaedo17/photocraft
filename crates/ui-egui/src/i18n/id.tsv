@@ -3249,6 +3249,7 @@ curves	Smooth	Haluskan
 	Shared storage	Penyimpanan bersama
 	Shared storage (grant access)	Penyimpanan bersama (beri akses)
 	Tap files to select them.	Ketuk file untuk memilihnya.
+	{name} already exists. Replace it?	{name} sudah ada. Ganti?
 	This build can't request shared-storage access.	Build ini tidak dapat meminta akses penyimpanan bersama.
 	This folder can't be read yet. Grant PhotoCraft access to all files.	Folder ini belum dapat dibaca. Beri PhotoCraft akses ke semua file.
 	Up	Naik
