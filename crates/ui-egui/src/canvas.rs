@@ -888,6 +888,25 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         // (Preferences › Tools, `paint_mouse`).
         crate::paint_mouse::sync_tool_brush(app);
         let mut buttons = crate::paint_mouse::canvas_buttons(app, &response, tool);
+
+        // Clear the menu dismissal flag on the corresponding pointer release, even when the
+        // release occurs outside the canvas and produces no `buttons.clicked` event.
+        // This prevents the next ordinary canvas click from being incorrectly suppressed.
+        if app.ui.canvas_tool_menu_dismissed
+            && (ui.input(|i| i.pointer.primary_released()) || ui.input(|i| i.pointer.secondary_released()))
+        {
+            app.ui.canvas_tool_menu_dismissed = false;
+        }
+
+        // Determine if the current press (if any) is outside an open canvas tool menu.
+        // If so, we should suppress tool input for this gesture (press, drag, click).
+        // This prevents the press from starting a stroke or other tool action that the
+        // click handler cannot undo.
+        let menu_dismiss_press = crate::canvas_tool_menu::menu_rect_if_open(app, &ctx).is_some_and(|r| {
+            response.interact_pointer_pos().is_some_and(|p| !r.contains(p))
+                || ui.input(|i| i.pointer.press_origin()).is_some_and(|p| rect.contains(p) && !r.contains(p))
+        });
+
         // The Crop tool's frame is edited from the press (before egui's drag threshold), so the
         // pixels past the canvas show at once, as in Photoshop.
         if tool == Tool::Crop && response.is_pointer_button_down_on() && ui.input(|i| i.pointer.primary_down()) && crate::crop_ui::press(app) {
@@ -899,6 +918,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             || matches!(tool, Tool::RectMarquee | Tool::EllipseMarquee | Tool::SingleRowMarquee | Tool::SingleColumnMarquee | Tool::ObjectSelection);
         let tool_press = egui::Id::unique(("tool-pointer-press-modifiers", idx));
         if capture_press
+            && !menu_dismiss_press
             && let Some((p, press_mods)) = ui.input(|i| {
                 i.events.iter().find_map(|e| match e {
                     egui::Event::PointerButton { pos, button: PointerButton::Primary, pressed: true, modifiers } if rect.contains(*pos) => {
@@ -1026,6 +1046,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         let right_down = ui.input(|i| i.pointer.secondary_down()) || physical_right;
         if strokes_live(tool)
             && !right_down
+            && !menu_dismiss_press
             && app.drag.is_none()
             && response.is_pointer_button_down_on()
             && ui.input(|i| i.pointer.primary_pressed())
@@ -1044,6 +1065,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             buttons.started = false;
         }
         if buttons.started
+            && !menu_dismiss_press
             && let Some(p) = ui.input(|i| i.pointer.press_origin()).filter(|p| rect.contains(*p)).or(response.interact_pointer_pos())
         {
             if tool == Tool::Move && app.ui.transform.is_none() {
@@ -1057,7 +1079,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         // recognises a drag (past its click distance): otherwise the first few points are lost
         // and the stroke starts with a straight segment and no pressure ramp.
         let press_stroke_moving = press_stroke && app.drag.is_some();
-        if buttons.dragged || buttons.stopped || press_stroke_moving {
+        if !menu_dismiss_press && (buttons.dragged || buttons.stopped || press_stroke_moving) {
             // Feed every pointer move the OS delivered this frame, not just the latest position, so
             // a fast stroke is sampled densely and renders as a smooth curve instead of a coarse
             // polyline. egui-winit pushes one `PointerMoved` per `CursorMoved`, and they accumulate
@@ -1115,7 +1137,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             feed_live_stroke(app);
             crate::magnetic_lasso_ui::flush(app);
         }
-        if buttons.stopped {
+        if buttons.stopped && !menu_dismiss_press {
             // The live painting press already created the stroke and this release commits it.
             // egui may also report clicked on the same release; replaying that click paints a
             // second full-pressure dab over the real (possibly light-pressure) pen dab.
@@ -1140,7 +1162,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         }
         // A stroke started on the press ends with the release, whether egui saw a drag, a click,
         // or neither (a long press that never moved).
-        if press_stroke && !buttons.stopped && ui.input(|i| i.pointer.primary_released()) {
+        if press_stroke && !buttons.stopped && !menu_dismiss_press && ui.input(|i| i.pointer.primary_released()) {
             buttons.clicked = false;
             let p = response.interact_pointer_pos().map(|p| xf.to_doc(p)).or_else(|| app.drag.as_ref().and_then(|d| d.points.last().map(|q| [q[0], q[1]])));
             if let Some(d) = p
@@ -1261,7 +1283,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             }
         }
         // Magnetic Lasso: between clicks the border follows the pointer with the button up.
-        if tool == Tool::MagneticLasso && app.ui.magnetic.active() && !(buttons.started || buttons.dragged || buttons.stopped) && response.hovered() {
+        if tool == Tool::MagneticLasso && app.ui.magnetic.active() && !(buttons.started || buttons.dragged || buttons.stopped) && !menu_dismiss_press && response.hovered() {
             let moves: Vec<Pos2> = ui.input(|i| i.events.iter().filter_map(|e| if let egui::Event::PointerMoved(p) = e { Some(*p) } else { None }).collect());
             app.defer_live_stroke = true;
             for p in moves.into_iter().filter(|p| rect.contains(*p)) {
