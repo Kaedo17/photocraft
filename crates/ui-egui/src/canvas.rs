@@ -1157,48 +1157,105 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             && let Some(p) = response.interact_pointer_pos()
         {
             let click_button = if app.secondary_erase { PointerButton::Secondary } else { PointerButton::Primary };
-            let click_mods = ui.input(|i| pointer_button_modifiers(&i.events, click_button)).unwrap_or(mods);
-            let click_mods = if tool == Tool::ObjectSelection && click_button == PointerButton::Primary {
-                ctx.data(|d| d.get_temp(tool_press)).unwrap_or(click_mods)
+            if let Some(menu) = &app.ui.canvas_tool_menu {
+                // If a canvas tool menu is open and this click is outside it, the click will
+                // dismiss the menu and should not also trigger a tool action (Photoshop behavior).
+                let menu_rect = egui::Rect::from_min_size(
+                    egui::pos2(menu.pos[0], menu.pos[1]),
+                    egui::vec2(200.0, 200.0), // conservative height estimate
+                );
+                if !menu_rect.contains(p) {
+                    // Click is outside the open menu - it will dismiss the menu, don't trigger tool action.
+                } else {
+                    let click_mods = ui.input(|i| pointer_button_modifiers(&i.events, click_button)).unwrap_or(mods);
+                    let click_mods = if tool == Tool::ObjectSelection && click_button == PointerButton::Primary {
+                        ctx.data(|d| d.get_temp(tool_press)).unwrap_or(click_mods)
+                    } else {
+                        click_mods
+                    };
+                    let d = xf.to_doc(p);
+                    match tool {
+                        Tool::Zoom if !transform_owns_pointer => {
+                            let nz = crate::zoom_levels::step(view.zoom, if zoom_out(click_mods.alt) { -1 } else { 1 }, view.doc_size);
+                            let center = app.session.prefs().tools.zoom_clicked_point_to_center;
+                            let doc_anchor = xf.to_doc(p);
+                            let screen_anchor = p;
+                            zoom_about(&mut view, &xf, p, nz, center, ppp);
+                            view.request_zoom_animation(app.session.prefs().general.animated_zoom && nz != display_view.zoom);
+                            view.zoom_anchor = (view.zoom_animating && !center).then_some((doc_anchor, [screen_anchor.x, screen_anchor.y]));
+                        }
+                        // A click with the (temporary) Hand does nothing, never the tool underneath.
+                        Tool::Hand | Tool::RotateView => {}
+                        // Double-clicking closes the polygonal lasso: the first click placed the last
+                        // vertex (or already closed it), so the second never starts a new polygon. egui
+                        // reports it as a triple click when a vertex went down shortly before.
+                        Tool::PolygonLasso if response.double_clicked() || response.triple_clicked() => commit_polygon(app),
+                        // The same for the Magnetic Lasso: along the edges, or straight with ⌥.
+                        Tool::MagneticLasso if response.double_clicked() || response.triple_clicked() => crate::magnetic_lasso_ui::close(app, mods.alt),
+                        // The first click placed (or grabbed) the point; the second toggles it.
+                        Tool::CurvaturePen if response.double_clicked() => crate::vector_ui::curvature_toggle(app, d[0], d[1]),
+                        // Double-clicking a guide opens Preferences › Guides, Grid & Slices, as in Photoshop.
+                        Tool::Move if response.double_clicked() && crate::rulers::guide_at(app, d[0], d[1]).is_some() => {
+                            if let Err(e) = crate::menus::invoke(app, &ctx, "edit.preferences.guidesGridAndSlices", json!({})) {
+                                app.ui.status = e;
+                            }
+                        }
+                        _ => {
+                            if tool == Tool::Move && app.ui.transform.is_none() {
+                                begin_transform_controls_at(app, &ctx, &xf, p);
+                            }
+                            // If this tool was not handled on pointer-down, fall back to a
+                            // click-sized gesture while preserving pen pressure (mouse stays at 1).
+                            tool_event(app, ToolEvent::Down { x: d[0], y: d[1], pressure: app.stylus.pressure() }, click_mods);
+                            tap_at_peak_pressure(app);
+                            tool_event(app, ToolEvent::Up { x: d[0], y: d[1] }, click_mods);
+                        }
+                    }
+                }
             } else {
-                click_mods
-            };
-            let d = xf.to_doc(p);
-            match tool {
-                Tool::Zoom if !transform_owns_pointer => {
-                    let nz = crate::zoom_levels::step(view.zoom, if zoom_out(click_mods.alt) { -1 } else { 1 }, view.doc_size);
-                    let center = app.session.prefs().tools.zoom_clicked_point_to_center;
-                    let doc_anchor = xf.to_doc(p);
-                    let screen_anchor = p;
-                    zoom_about(&mut view, &xf, p, nz, center, ppp);
-                    view.request_zoom_animation(app.session.prefs().general.animated_zoom && nz != display_view.zoom);
-                    view.zoom_anchor = (view.zoom_animating && !center).then_some((doc_anchor, [screen_anchor.x, screen_anchor.y]));
-                }
-                // A click with the (temporary) Hand does nothing, never the tool underneath.
-                Tool::Hand | Tool::RotateView => {}
-                // Double-clicking closes the polygonal lasso: the first click placed the last
-                // vertex (or already closed it), so the second never starts a new polygon. egui
-                // reports it as a triple click when a vertex went down shortly before.
-                Tool::PolygonLasso if response.double_clicked() || response.triple_clicked() => commit_polygon(app),
-                // The same for the Magnetic Lasso: along the edges, or straight with ⌥.
-                Tool::MagneticLasso if response.double_clicked() || response.triple_clicked() => crate::magnetic_lasso_ui::close(app, mods.alt),
-                // The first click placed (or grabbed) the point; the second toggles it.
-                Tool::CurvaturePen if response.double_clicked() => crate::vector_ui::curvature_toggle(app, d[0], d[1]),
-                // Double-clicking a guide opens Preferences › Guides, Grid & Slices, as in Photoshop.
-                Tool::Move if response.double_clicked() && crate::rulers::guide_at(app, d[0], d[1]).is_some() => {
-                    if let Err(e) = crate::menus::invoke(app, &ctx, "edit.preferences.guidesGridAndSlices", json!({})) {
-                        app.ui.status = e;
+                let click_mods = ui.input(|i| pointer_button_modifiers(&i.events, click_button)).unwrap_or(mods);
+                let click_mods = if tool == Tool::ObjectSelection && click_button == PointerButton::Primary {
+                    ctx.data(|d| d.get_temp(tool_press)).unwrap_or(click_mods)
+                } else {
+                    click_mods
+                };
+                let d = xf.to_doc(p);
+                match tool {
+                    Tool::Zoom if !transform_owns_pointer => {
+                        let nz = crate::zoom_levels::step(view.zoom, if zoom_out(click_mods.alt) { -1 } else { 1 }, view.doc_size);
+                        let center = app.session.prefs().tools.zoom_clicked_point_to_center;
+                        let doc_anchor = xf.to_doc(p);
+                        let screen_anchor = p;
+                        zoom_about(&mut view, &xf, p, nz, center, ppp);
+                        view.request_zoom_animation(app.session.prefs().general.animated_zoom && nz != display_view.zoom);
+                        view.zoom_anchor = (view.zoom_animating && !center).then_some((doc_anchor, [screen_anchor.x, screen_anchor.y]));
                     }
-                }
-                _ => {
-                    if tool == Tool::Move && app.ui.transform.is_none() {
-                        begin_transform_controls_at(app, &ctx, &xf, p);
+                    // A click with the (temporary) Hand does nothing, never the tool underneath.
+                    Tool::Hand | Tool::RotateView => {}
+                    // Double-clicking closes the polygonal lasso: the first click placed the last
+                    // vertex (or already closed it), so the second never starts a new polygon. egui
+                    // reports it as a triple click when a vertex went down shortly before.
+                    Tool::PolygonLasso if response.double_clicked() || response.triple_clicked() => commit_polygon(app),
+                    // The same for the Magnetic Lasso: along the edges, or straight with ⌥.
+                    Tool::MagneticLasso if response.double_clicked() || response.triple_clicked() => crate::magnetic_lasso_ui::close(app, mods.alt),
+                    // The first click placed (or grabbed) the point; the second toggles it.
+                    Tool::CurvaturePen if response.double_clicked() => crate::vector_ui::curvature_toggle(app, d[0], d[1]),
+                    // Double-clicking a guide opens Preferences › Guides, Grid & Slices, as in Photoshop.
+                    Tool::Move if response.double_clicked() && crate::rulers::guide_at(app, d[0], d[1]).is_some() => {
+                        if let Err(e) = crate::menus::invoke(app, &ctx, "edit.preferences.guidesGridAndSlices", json!({})) {
+                            app.ui.status = e;
+                        }
                     }
-                    // If this tool was not handled on pointer-down, fall back to a
-                    // click-sized gesture while preserving pen pressure (mouse stays at 1).
-                    tool_event(app, ToolEvent::Down { x: d[0], y: d[1], pressure: app.stylus.pressure() }, click_mods);
-                    tap_at_peak_pressure(app);
-                    tool_event(app, ToolEvent::Up { x: d[0], y: d[1] }, click_mods);
+                    _ => {
+                        if tool == Tool::Move && app.ui.transform.is_none() {
+                            begin_transform_controls_at(app, &ctx, &xf, p);
+                        }
+                        // If this tool was not handled on pointer-down, fall back to a
+                        // click-sized gesture while preserving pen pressure (mouse stays at 1).
+                        tool_event(app, ToolEvent::Down { x: d[0], y: d[1], pressure: app.stylus.pressure() }, click_mods);
+                        tap_at_peak_pressure(app);
+                        tool_event(app, ToolEvent::Up { x: d[0], y: d[1] }, click_mods);
+                    }
                 }
             }
         }
