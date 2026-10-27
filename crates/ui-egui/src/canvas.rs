@@ -1156,17 +1156,17 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         if buttons.clicked
             && let Some(p) = response.interact_pointer_pos()
         {
-            let click_button = if app.secondary_erase { PointerButton::Secondary } else { PointerButton::Primary };
-            if let Some(menu) = &app.ui.canvas_tool_menu {
+            // If an outside press dismissed the canvas tool menu, consume this release click
+            // so it doesn't also trigger a tool action (Photoshop behavior).
+            if app.ui.canvas_tool_menu_dismissed {
+                app.ui.canvas_tool_menu_dismissed = false;
+            } else if let Some(menu_rect) = crate::canvas_tool_menu::menu_rect_if_open(app, &ctx) {
                 // If a canvas tool menu is open and this click is outside it, the click will
                 // dismiss the menu and should not also trigger a tool action (Photoshop behavior).
-                let menu_rect = egui::Rect::from_min_size(
-                    egui::pos2(menu.pos[0], menu.pos[1]),
-                    egui::vec2(200.0, 200.0), // conservative height estimate
-                );
                 if !menu_rect.contains(p) {
                     // Click is outside the open menu - it will dismiss the menu, don't trigger tool action.
                 } else {
+                    let click_button = if app.secondary_erase { PointerButton::Secondary } else { PointerButton::Primary };
                     let click_mods = ui.input(|i| pointer_button_modifiers(&i.events, click_button)).unwrap_or(mods);
                     let click_mods = if tool == Tool::ObjectSelection && click_button == PointerButton::Primary {
                         ctx.data(|d| d.get_temp(tool_press)).unwrap_or(click_mods)
@@ -1213,6 +1213,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                     }
                 }
             } else {
+                let click_button = if app.secondary_erase { PointerButton::Secondary } else { PointerButton::Primary };
                 let click_mods = ui.input(|i| pointer_button_modifiers(&i.events, click_button)).unwrap_or(mods);
                 let click_mods = if tool == Tool::ObjectSelection && click_button == PointerButton::Primary {
                     ctx.data(|d| d.get_temp(tool_press)).unwrap_or(click_mods)
