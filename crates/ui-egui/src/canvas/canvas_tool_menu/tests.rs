@@ -639,6 +639,50 @@ fn a_held_menu_dismissal_press_never_arms_the_zoom_hold() {
     assert_eq!(h.state().ui.views[0].zoom, zoom, "the dismissal release does not zoom either");
 }
 
+/// #9832 (CodeRabbit): while the dismissal press stays down, the temporary Hand (Space) and the
+/// selected Hand must not pan either — the consumed gesture is inert until its release, and the
+/// pans read `response.dragged()` directly, so they need the gate up front.
+#[test]
+fn a_held_menu_dismissal_press_cannot_pan_the_view() {
+    fn key(h: &mut Harness<'static, PhotocraftApp>, k: egui::Key, pressed: bool) {
+        h.event(egui::Event::Key { key: k, physical_key: None, pressed, repeat: false, modifiers: Modifiers::NONE });
+        h.run_steps(1);
+    }
+    let mut h = zoom_harness(false);
+    let (zoom, center0) = (h.state().ui.views[0].zoom, h.state().ui.views[0].center);
+    let open_at = screen_of(h.state(), [300.0, 100.0]);
+    right_click(&mut h, open_at, Modifiers::NONE);
+    assert!(h.state().ui.canvas_tool_menu.is_some(), "right-click opens the view menu");
+    // The dismissal press: the menu goes, and the button stays down.
+    let far = dismissal_point(&h);
+    h.event(egui::Event::PointerMoved(far));
+    h.run_steps(1);
+    h.event(egui::Event::PointerButton { pos: far, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
+    h.run_steps(1);
+    assert!(h.state().ui.canvas_tool_menu.is_none(), "the outside press dismisses the menu");
+    // Hold Space: the temporary Hand arms, but dragging must not pan the view.
+    key(&mut h, egui::Key::Space, true);
+    assert_eq!(crate::input::hold_keys::held_tool(h.state(), &h.ctx), Some(crate::input::hold_keys::Temporary::Hand), "Space arms the temporary hand");
+    h.event(egui::Event::PointerMoved(far + vec2(120.0, -60.0)));
+    h.run_steps(2);
+    h.event(egui::Event::PointerMoved(far + vec2(240.0, -120.0)));
+    h.run_steps(2);
+    assert_eq!(h.state().ui.views[0].center, center0, "a held dismissal press must not pan the view");
+    assert_eq!(h.state().ui.views[0].zoom, zoom);
+    // Release both: an ordinary Hand drag pans again, the flag did not stick.
+    h.event(egui::Event::PointerButton { pos: far, button: PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE });
+    key(&mut h, egui::Key::Space, false);
+    h.state_mut().ui.tool = Tool::Hand;
+    h.run_steps(1);
+    h.event(egui::Event::PointerButton { pos: far, button: PointerButton::Primary, pressed: true, modifiers: Modifiers::NONE });
+    h.run_steps(1);
+    h.event(egui::Event::PointerMoved(far + vec2(100.0, 50.0)));
+    h.run_steps(2);
+    h.event(egui::Event::PointerButton { pos: far, button: PointerButton::Primary, pressed: false, modifiers: Modifiers::NONE });
+    h.run_steps(2);
+    assert_ne!(h.state().ui.views[0].center, center0, "an ordinary Hand drag pans the view again");
+}
+
 #[test]
 fn view_menu_zoom_in_keeps_the_clicked_point_under_the_pointer() {
     let mut app = zoom_app(400, 300);

@@ -839,10 +839,21 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     // box is only drawn and driven on the primary canvas.
     let transform_owns_pointer = primary && app.ui.transform.is_some() && temporary.is_none() && !middle;
     let hand_pan = tool == Tool::Hand && !transform_owns_pointer;
+    // A press outside an open canvas tool menu dismisses it (`canvas_tool_menu::show`, after this
+    // input pass) and the whole gesture is consumed until its release, as in Photoshop: no tool
+    // press, stroke, drag, pan or zoom step. The menu closes mid-frame (after this input pass), so
+    // the open-menu hit test covers the dismissal frame, and the flag persists the block for the
+    // frames after it, until the release clear below the click handling. It gates the Hand and
+    // flick pans below too: they read `response.dragged()` directly and never see `buttons`
+    // (CodeRabbit, #9841).
+    let menu_dismiss_press = app.ui.canvas_tool_menu_dismissed
+        || crate::canvas_tool_menu::menu_rect_if_open(app, &ctx).is_some_and(|r| {
+            ui.input(|i| i.pointer.press_origin()).is_some_and(|p| !r.contains(p))
+        });
     // Preferences › Tools › Enable Flick Panning: a Hand drag let go while moving glides on.
     let flick_id = egui::Id::unique(("pc-flick-pan", idx, primary, ctx.viewport_id()));
     let flick_on = app.session.prefs().tools.enable_flick_panning;
-    if let Some(d) = crate::flick_pan::frame(&ctx, flick_id, hand_pan && response.dragged() && !stroke_dismissal, response.drag_delta(), flick_on) {
+    if let Some(d) = crate::flick_pan::frame(&ctx, flick_id, hand_pan && response.dragged() && !stroke_dismissal && !menu_dismiss_press, response.drag_delta(), flick_on) {
         let d = xf.unmap_vec(d) / (view.zoom / ppp);
         if d.is_finite() {
             view.zoom_animating = false;
@@ -855,7 +866,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             ctx.data_mut(|m| m.get_temp_mut_or_default::<crate::flick_pan::Flick>(flick_id).stop());
         }
     }
-    if hand_pan && response.dragged() && !stroke_dismissal {
+    if hand_pan && response.dragged() && !stroke_dismissal && !menu_dismiss_press {
         let d = xf.unmap_vec(response.drag_delta()) / (view.zoom / ppp);
         view.center[0] -= d.x;
         view.center[1] -= d.y;
@@ -889,15 +900,6 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         crate::paint_mouse::sync_tool_brush(app);
         let mut buttons = crate::paint_mouse::canvas_buttons(app, &response, tool);
 
-        // A press outside an open canvas tool menu dismisses it (`canvas_tool_menu::show`, after
-        // this input pass) and the whole gesture is consumed until its release, as in Photoshop:
-        // no tool press, stroke, drag or zoom step. The menu closes mid-frame (after this input
-        // pass), so the open-menu hit test covers the dismissal frame and the flag persists the
-        // block for the frames after it, until the release clear below the click handling.
-        let menu_dismiss_press = app.ui.canvas_tool_menu_dismissed
-            || crate::canvas_tool_menu::menu_rect_if_open(app, &ctx).is_some_and(|r| {
-                ui.input(|i| i.pointer.press_origin()).is_some_and(|p| !r.contains(p))
-            });
         if menu_dismiss_press {
             // Navigation and drags read `buttons` directly (zoom holds and drags, Rotate View):
             // starve them. The release click stays armed, so the click handling below consumes
