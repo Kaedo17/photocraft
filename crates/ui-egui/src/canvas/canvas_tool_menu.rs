@@ -1173,7 +1173,11 @@ pub fn show(app: &mut PhotocraftApp, ctx: &Context) {
         choose(app, ctx, &command);
     } else if crate::canvas_popup::outside_pressed(ctx, id, area.response.rect) {
         app.ui.canvas_tool_menu = None;
-        app.ui.canvas_tool_menu_dismissed = true;
+        // A fast click can press and release in one frame: the canvas input above already
+        // suppressed its action through the open-menu hit test, and the deferred release clear
+        // (in `canvas_view`, below the click handling) would never fire after this frame. Don't
+        // arm the flag then, or it would eat the next ordinary click (CodeRabbit, #9841).
+        app.ui.canvas_tool_menu_dismissed = !ctx.input(|i| i.pointer.any_released());
     }
 }
 

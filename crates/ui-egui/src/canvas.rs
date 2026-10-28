@@ -889,27 +889,32 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         crate::paint_mouse::sync_tool_brush(app);
         let mut buttons = crate::paint_mouse::canvas_buttons(app, &response, tool);
 
-        // Clear the menu dismissal flag on the corresponding pointer release, even when the
-        // release occurs outside the canvas and produces no `buttons.clicked` event.
-        // This prevents the next ordinary canvas click from being incorrectly suppressed.
-        if app.ui.canvas_tool_menu_dismissed
-            && (ui.input(|i| i.pointer.primary_released()) || ui.input(|i| i.pointer.secondary_released()))
-        {
-            app.ui.canvas_tool_menu_dismissed = false;
+        // A press outside an open canvas tool menu dismisses it (`canvas_tool_menu::show`, after
+        // this input pass) and the whole gesture is consumed until its release, as in Photoshop:
+        // no tool press, stroke, drag or zoom step. The menu closes mid-frame (after this input
+        // pass), so the open-menu hit test covers the dismissal frame and the flag persists the
+        // block for the frames after it, until the release clear below the click handling.
+        let menu_dismiss_press = app.ui.canvas_tool_menu_dismissed
+            || crate::canvas_tool_menu::menu_rect_if_open(app, &ctx).is_some_and(|r| {
+                ui.input(|i| i.pointer.press_origin()).is_some_and(|p| !r.contains(p))
+            });
+        if menu_dismiss_press {
+            // Navigation and drags read `buttons` directly (zoom holds and drags, Rotate View):
+            // starve them. The release click stays armed, so the click handling below consumes
+            // it through the flag.
+            buttons.started = false;
+            buttons.dragged = false;
+            buttons.stopped = false;
         }
-
-        // Determine if the current press (if any) is outside an open canvas tool menu.
-        // If so, we should suppress tool input for this gesture (press, drag, click).
-        // This prevents the press from starting a stroke or other tool action that the
-        // click handler cannot undo.
-        let menu_dismiss_press = crate::canvas_tool_menu::menu_rect_if_open(app, &ctx).is_some_and(|r| {
-            response.interact_pointer_pos().is_some_and(|p| !r.contains(p))
-                || ui.input(|i| i.pointer.press_origin()).is_some_and(|p| rect.contains(p) && !r.contains(p))
-        });
 
         // The Crop tool's frame is edited from the press (before egui's drag threshold), so the
         // pixels past the canvas show at once, as in Photoshop.
-        if tool == Tool::Crop && response.is_pointer_button_down_on() && ui.input(|i| i.pointer.primary_down()) && crate::crop_ui::press(app) {
+        if tool == Tool::Crop
+            && !menu_dismiss_press
+            && response.is_pointer_button_down_on()
+            && ui.input(|i| i.pointer.primary_down())
+            && crate::crop_ui::press(app)
+        {
             ctx.request_repaint();
         }
         // Capture intent at the press, before egui's drag threshold or click replay on release:
@@ -1018,10 +1023,11 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
             (buttons.started, buttons.dragged, buttons.stopped, buttons.clicked) = (false, false, false, false);
         }
         // Animated Zoom: a Zoom press held still zooms continuously (zoom_hold.rs); while it does,
-        // it owns the press: no scrub, and its release is no click step.
+        // it owns the press: no scrub, and its release is no click step. A menu-dismissal press
+        // must not arm it: holding the dismissal click would zoom (CodeRabbit, #9841).
         if tool == Tool::Zoom && !transform_owns_pointer {
             let out = zoom_out(ui.input(|i| i.modifiers.alt));
-            let on_canvas = !under_dialog && !over_compass && response.is_pointer_button_down_on();
+            let on_canvas = !menu_dismiss_press && !under_dialog && !over_compass && response.is_pointer_button_down_on();
             let hold = crate::zoom_hold::hold_id(idx, primary, ctx.viewport_id());
             if crate::zoom_hold::update(&ctx, &mut view, &xf, app.session.prefs().general.animated_zoom, out, ppp, on_canvas, hold) {
                 (buttons.started, buttons.dragged, buttons.stopped, buttons.clicked) = (false, false, false, false);
@@ -1281,6 +1287,19 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                     }
                 }
             }
+        }
+        // Clear the menu-dismissal flag on the gesture's pointer release, even when the release
+        // occurs outside the canvas and produces no `buttons.clicked` event. It sits below (not
+        // above) the click handling, so a release over the canvas in a later frame is first
+        // consumed by the flag check there: clearing before it would let that release zoom
+        // (CodeRabbit, #9841). The all-buttons-up check also covers a release that landed in a
+        // frame this canvas didn't render.
+        if app.ui.canvas_tool_menu_dismissed
+            && (ui.input(|i| i.pointer.primary_released())
+                || ui.input(|i| i.pointer.secondary_released())
+                || !ui.input(|i| i.pointer.any_down()))
+        {
+            app.ui.canvas_tool_menu_dismissed = false;
         }
         // Magnetic Lasso: between clicks the border follows the pointer with the button up.
         if tool == Tool::MagneticLasso && app.ui.magnetic.active() && !(buttons.started || buttons.dragged || buttons.stopped) && !menu_dismiss_press && response.hovered() {
