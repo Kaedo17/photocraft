@@ -1,6 +1,6 @@
 use super::invoke::{panel_alias, proof_preset, workspace_name};
 use super::state::{checked, is_enabled, reveal_label};
-use super::*;
+use super::{DOCUMENT_ITEM, PhotocraftApp, UI_COMMANDS};
 
 /// Menu tree entry for rendering and for `ui.inspect`.
 #[derive(Clone, Debug, serde::Serialize)]
@@ -154,7 +154,7 @@ pub fn menu_items(app: &PhotocraftApp) -> Vec<MenuItem> {
         }
         recent.push(MenuItem {
             id: "file.clearRecent".into(),
-            label: "Clear Recent Files".into(),
+            label: "Clear Recent File List".into(),
             path: rp.clone(),
             shortcut: None,
             enabled: !app.ui.recent_files.is_empty(),

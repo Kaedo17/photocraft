@@ -1,7 +1,7 @@
 use super::panel::chevron_icon;
 use super::scrub::take_label_scrub_name;
 use super::slider::wheel_notches_of;
-use super::*;
+use super::{Pos2, Rect, Response, Sense, Stroke, Tokens, Ui, Vec2, type_ahead, vec2};
 
 /// A compact labelled dropdown in the studio style.
 pub fn dropdown<T: PartialEq + Clone>(ui: &mut Ui, id: &str, name: &str, current: &mut T, options: &[(T, &str)], width: f32) -> bool {
@@ -11,13 +11,13 @@ pub fn dropdown<T: PartialEq + Clone>(ui: &mut Ui, id: &str, name: &str, current
 /// [`dropdown`] whose option labels are shown exactly as given: names the user typed (a channel
 /// or layer name) must not be translated, unlike the built-in labels [`dropdown`] translates (#5335).
 pub fn dropdown_literal<T: PartialEq + Clone>(ui: &mut Ui, id: &str, name: &str, current: &mut T, options: &[(T, &str)], width: f32) -> bool {
-    let (chosen, _) = dropdown_with(ui, id, name, current, options, width, false, false);
+    let (chosen, _) = dropdown_with(ui, id, name, current, options, width, false, false, &|_| false);
     !chosen.is_empty()
 }
 
 /// [`dropdown`], also returning the option under the pointer in its open list (live previews).
 pub fn dropdown_hovered<T: PartialEq + Clone>(ui: &mut Ui, id: &str, name: &str, current: &mut T, options: &[(T, &str)], width: f32) -> (bool, Option<T>) {
-    let (chosen, hovered) = dropdown_with(ui, id, name, current, options, width, false, true);
+    let (chosen, hovered) = dropdown_with(ui, id, name, current, options, width, false, true, &|_| false);
     (!chosen.is_empty(), hovered)
 }
 
@@ -35,7 +35,22 @@ pub fn dropdown_wheel_hovered<T: PartialEq + Clone>(
     options: &[(T, &str)],
     width: f32,
 ) -> (Vec<T>, Option<T>) {
-    dropdown_with(ui, id, name, current, options, width, true, true)
+    dropdown_with(ui, id, name, current, options, width, true, true, &|_| false)
+}
+
+/// [`dropdown_wheel_hovered`] whose open list draws a line above each option (but the first) that
+/// `starts_group`: Photoshop's blend mode lists group their modes (#5532). The lines are only
+/// drawn: the options, their order and how the wheel, the keys and the pointer pick them stay.
+pub fn dropdown_wheel_grouped<T: PartialEq + Clone>(
+    ui: &mut Ui,
+    id: &str,
+    name: &str,
+    current: &mut T,
+    options: &[(T, &str)],
+    width: f32,
+    starts_group: impl Fn(&T) -> bool,
+) -> (Vec<T>, Option<T>) {
+    dropdown_with(ui, id, name, current, options, width, true, true, &starts_group)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -48,6 +63,7 @@ fn dropdown_with<T: PartialEq + Clone>(
     width: f32,
     wheel: bool,
     translate: bool,
+    starts_group: &dyn Fn(&T) -> bool,
 ) -> (Vec<T>, Option<T>) {
     let shown = |l: &str| if translate { tl!(l).to_string() } else { l.to_string() };
     let label = options.iter().find(|(v, _)| v == current).map(|(_, l)| shown(l)).unwrap_or_else(|| "—".into());
@@ -64,7 +80,7 @@ fn dropdown_with<T: PartialEq + Clone>(
     let (press, close) = crate::press_menu::PressCombo::before(ui, id);
     let texts: Vec<String> = options.iter().map(|(_, l)| shown(l)).collect();
     let response =
-        egui::ComboBox::from_id_salt(id).selected_text(label).width(width).height(420.0).icon(chevron_icon).close_behavior(close).show_ui(ui, |ui| {
+        craft_ui::ComboBox::from_id_salt(id).selected_text(label).width(width).height(420.0).icon(chevron_icon).close_behavior(close).show_ui(ui, |ui| {
             fit_widest_option(ui, texts.iter().map(|l| l.as_str()));
             // A typed letter jumps to the next option starting with it, ↩ closes the list (#1481).
             let labels: Vec<&str> = texts.iter().map(|l| l.as_str()).collect();
@@ -86,7 +102,10 @@ fn dropdown_with<T: PartialEq + Clone>(
             // The row nearest the pointer, by its distance to each row.
             let pointer = ui.ctx().pointer_hover_pos().filter(|_| ui.rect_contains_pointer(ui.clip_rect()));
             let mut nearest: Option<(f32, &T)> = None;
-            for ((v, _), text) in options.iter().zip(texts.iter()) {
+            for (i, ((v, _), text)) in options.iter().zip(texts.iter()).enumerate() {
+                if i > 0 && starts_group(v) {
+                    list_separator(ui);
+                }
                 let item = ui.selectable_label(v == current, text.as_str());
                 if reveal && v == current {
                     item.scroll_to_me(None);
@@ -123,7 +142,7 @@ fn dropdown_with<T: PartialEq + Clone>(
     if wheel && !over_list {
         let stepped = wheel_steps(ui, wheel_id, response.hovered(), current, options);
         wheeled = !stepped.is_empty();
-        if wheeled && egui::ComboBox::is_open(ui.ctx(), response.id) {
+        if wheeled && craft_ui::ComboBox::is_open(ui.ctx(), response.id) {
             ui.data_mut(|d| d.insert_temp(reveal_id, true));
         }
         chosen.extend(stepped);
@@ -133,6 +152,15 @@ fn dropdown_with<T: PartialEq + Clone>(
         hovered = None;
     }
     (chosen, hovered)
+}
+
+/// A line between two groups of an open dropdown list's options, as wide as the list. Like egui's
+/// separator it takes no width while egui sizes the list, so it never widens it.
+fn list_separator(ui: &mut Ui) {
+    let t = Tokens::get(ui.ctx());
+    let width = if ui.is_sizing_pass() { 0.0 } else { ui.available_width() };
+    let (rect, _) = ui.allocate_exact_size(vec2(width, 1.0), Sense::hover());
+    ui.painter().hline(rect.x_range(), rect.center().y, Stroke::new(1.0, t.separator));
 }
 
 /// Makes an open dropdown list as wide as its widest option is when hovered, from the start. egui
@@ -184,7 +212,7 @@ fn wheel_steps<T: PartialEq + Clone>(ui: &mut Ui, id: egui::Id, hovered: bool, c
 }
 
 /// Give a dropdown keyboard focus when it opens, then use the arrow keys to move through its
-/// choices. `egui::ComboBox` opens a popup but leaves focus on the canvas by default, which makes
+/// choices. `craft_ui::ComboBox` opens a popup but leaves focus on the canvas by default, which makes
 /// controls such as the Layers panel's Blend Mode dropdown unreachable from the keyboard.
 fn combo_box_arrow_keys<T: PartialEq + Clone>(ui: &mut Ui, response: &Response, current: &mut T, options: &[(T, &str)]) -> bool {
     if response.clicked() {
@@ -192,7 +220,7 @@ fn combo_box_arrow_keys<T: PartialEq + Clone>(ui: &mut Ui, response: &Response, 
     }
     // The popup, rather than its button, becomes the focused egui layer after it opens. While it
     // is open it owns its navigation keys, even though `response.has_focus()` is then false.
-    if !egui::ComboBox::is_open(ui.ctx(), response.id) || options.is_empty() {
+    if !craft_ui::ComboBox::is_open(ui.ctx(), response.id) || options.is_empty() {
         return false;
     }
     let step = if ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::ArrowDown)) {
@@ -268,7 +296,7 @@ pub fn dropdown_with_tooltips<T: PartialEq + Clone>(ui: &mut Ui, id: &str, name:
     let mut changed = false;
     let (press, close) = crate::press_menu::PressCombo::before(ui, id);
     let response =
-        egui::ComboBox::from_id_salt(id).selected_text(label).width(width).height(420.0).icon(chevron_icon).close_behavior(close).show_ui(ui, |ui| {
+        craft_ui::ComboBox::from_id_salt(id).selected_text(label).width(width).height(420.0).icon(chevron_icon).close_behavior(close).show_ui(ui, |ui| {
             fit_widest_option(ui, options.iter().map(|(_, l, _)| tl!(l)));
             let labels: Vec<&str> = options.iter().map(|(_, l, _)| tl!(l)).collect();
             let shown = options.iter().position(|(v, _, _)| v == current);
